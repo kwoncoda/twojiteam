@@ -1,0 +1,18 @@
+.page { padding-bottom: 3rem; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 1rem; align-items: stretch; }
+.panel { padding: 1.5rem; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-xl); box-shadow: var(--shadow); }
+.summary { display: grid; gap: .25rem; padding: 1rem; border-radius: 12px; background: #edf4ff; }
+.summary span, .spot span, .spot small { color: var(--muted); }
+.warnings { margin-top: 1rem; padding: 1rem; border-radius: 12px; color: #8a3d14; background: #fff4e8; }
+.warnings p { margin: .35rem 0 0; }
+.list { margin: 1.25rem 0; padding-left: 1.5rem; }
+.list li + li { margin-top: .8rem; }
+.spot { display: grid; gap: .15rem; }
+.itemActions { display: flex; gap: .35rem; margin-top: .45rem; flex-wrap: wrap; }
+.itemActions button { min-height: 36px; padding: .35rem .6rem; font-size: .85rem; }
+.transport { display: flex; align-items: center; gap: .5rem; margin-top: .5rem; color: var(--muted); font-size: .9rem; }
+.transport select { padding: .35rem; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+.actions button:nth-child(2) { flex: 1; }
+.saved { color: #176b45; font-weight: 700; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }

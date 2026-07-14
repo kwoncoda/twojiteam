@@ -1,0 +1,1 @@
+export function Header() { return <header className="site-header"><div className="eyebrow">TRAVEL PICK</div><h1>어디로 여행지 떠나볼까요?</h1><p className="lede">추천 장소를 하나씩 골라보고, 마음에 드는 곳을 여행 목록에 담아보세요.</p></header>; }
