@@ -1,0 +1,3 @@
+import { regions } from '../../../data/mock/regions';
+import type { DestinationSearchProps } from '../travelSearch.types';
+export function DestinationSearch({ value, onChange }: DestinationSearchProps) { return <label>여행 지역<select aria-label="여행 지역 선택" value={value} onChange={(event) => { const region = regions.find((item) => item.name === event.target.value); onChange(region ? { name: region.name, latitude: region.latitude, longitude: region.longitude } : null); }}><option value="">지역을 선택하세요</option>{regions.map((region) => <option key={region.id} value={region.name}>{region.name}</option>)}</select></label>; }

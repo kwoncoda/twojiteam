@@ -1,0 +1,3 @@
+import type { ScoredSpot } from '../recommendation.types';
+import { Button } from '../../../components/common/Button/Button';
+export function RecommendationCard({ spot, selected, onSelect, onReject }: { spot: ScoredSpot; selected: boolean; onSelect: () => void; onReject: () => void }) { return <div className={`recommendation-card ${selected ? 'selected' : ''}`}><button className="card-select" type="button" onClick={onSelect}><strong>{spot.name}</strong><span>{spot.region} · {spot.description}</span><small>{spot.reason}{spot.distanceKm === undefined ? '' : ` · 약 ${spot.distanceKm.toFixed(1)}km`}</small></button><Button variant="secondary" type="button" onClick={onReject}>다음 후보로</Button></div>; }
