@@ -1,109 +1,404 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>랜덤 점심 메뉴 추천</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f0f0f0;
-        }
-        h1 {
-            margin-bottom: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        #menu {
-            margin-top: 20px;
-            font-size: 24px;
-        }
-        #recent-menus {
-            margin-top: 20px;
-            font-size: 18px;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>오늘의 국내 여행지 추천</title>
+  <style>
+    :root { --ink:#172033; --muted:#68748a; --line:#dbe3ef; --brand:#2563eb; --brand-dark:#1746b0; --soft:#f5f8fd; --pin:#ef5b68; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--soft); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    .wrap { width:min(100% - 2rem, 1100px); margin:auto; }
+    header { padding:2.5rem 0 1.25rem; text-align:center; }
+    .eyebrow { color:var(--brand); font-size:.85rem; font-weight:800; letter-spacing:.08em; }
+    h1 { margin:.4rem 0; font-size:clamp(2rem,5vw,3.2rem); line-height:1.15; }
+    .lede { margin:0; color:var(--muted); }
+    main { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr); gap:1rem; padding-bottom:3rem; align-items:stretch; }
+    section { background:#fff; border:1px solid var(--line); border-radius:22px; box-shadow:0 12px 30px #1720330b; }
+    .map-panel { position:relative; min-height:590px; padding:1rem; overflow:hidden; }
+    #map { width:100%; height:100%; min-height:558px; border-radius:15px; }
+    #map-status { position:absolute; inset:1rem; display:grid; place-items:center; padding:2rem; text-align:center; color:var(--muted); background:#eef6ff; border-radius:15px; }
+    #map-status[hidden] { display:none; }
+    .api-error { position:absolute; left:1rem; right:1rem; bottom:1rem; z-index:2; padding:.85rem 1rem; border:1px solid #f3b4b4; border-radius:11px; background:#fff1f1; color:#9b1c1c; font-size:.9rem; }
+    .panel { padding:1.5rem; display:flex; flex-direction:column; }
+    .progress { color:var(--brand); font-weight:800; font-size:.9rem; }
+    h2 { margin:.4rem 0 .5rem; line-height:1.25; }
+    .hint { color:var(--muted); margin:0 0 1.25rem; }
+    .choices { display:grid; gap:.75rem; }
+    .choice { width:100%; text-align:left; border:1px solid var(--line); border-radius:14px; padding:1rem; background:#fff; color:var(--ink); cursor:pointer; transition:.2s; }
+    .choice:hover,.choice:focus-visible { border-color:var(--brand); box-shadow:0 0 0 3px #2563eb1c; }
+    .choice strong { display:block; font-size:1.05rem; }
+    .recommendation-badge { display:inline-block; margin-left:.35rem; color:var(--brand); font-size:.72rem; font-weight:800; }
+    .choice span { display:block; color:var(--muted); margin-top:.2rem; }
+    .choice.selected { background:#edf4ff; border-color:var(--brand); }
+    .actions { display:flex; gap:.6rem; margin-top:auto; padding-top:1.25rem; }
+    button { font:inherit; font-weight:800; min-height:46px; border-radius:11px; padding:.65rem 1rem; }
+    #next { flex:1; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer; }
+    #next:hover:not(:disabled) { background:var(--brand-dark); }
+    #next:disabled { cursor:not-allowed; opacity:.45; }
+    #restart { border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
+    .selected-list { margin:1.5rem 0 0; border-top:1px solid var(--line); padding-top:1rem; }
+    .selected-list h3 { margin:0 0 .5rem; font-size:1rem; }
+    .selected-list ol { margin:0; padding-left:1.3rem; color:var(--muted); }
+    .selected-list li + li { margin-top:.25rem; }
+    .complete { padding:1rem; border-radius:12px; background:#edf9f2; color:#176b45; font-weight:700; }
+    .route-options { margin-top:1rem; padding-top:1rem; border-top:1px solid var(--line); }
+    .route-options h3 { margin:0 0 .35rem; font-size:1rem; }
+    .route-buttons { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem; }
+    .route-button { border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; }
+    .route-button.selected, .route-button:hover { border-color:var(--brand); background:#edf4ff; }
+    #route-status { margin:.65rem 0 0; color:var(--muted); font-size:.9rem; }
+    .review-list { margin:1.25rem 0; padding-left:1.3rem; }
+    .review-list li + li { margin-top:.5rem; }
+    .review-list small { color:var(--muted); }
+    .review-total { padding:1rem; border-radius:12px; background:#edf4ff; color:var(--ink); }
+    .review-page { width:min(100% - 2rem, 1100px); margin:1rem auto 3rem; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr); gap:1rem; align-items:stretch; }
+    .review-page .map-panel { min-height:590px; }
+    .review-page[hidden] { display:none; }
+    .landing { max-width:720px; margin:1rem auto 3rem; padding:2.5rem; text-align:center; }
+    .landing h2 { font-size:clamp(1.6rem,4vw,2.3rem); }
+    .landing p { color:var(--muted); margin:0 auto 1.5rem; }
+    .landing-actions { display:flex; gap:.75rem; max-width:520px; margin:auto; }
+    .preference-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; max-width:720px; margin:1rem auto; text-align:left; }
+    .preference-grid label { display:grid; gap:.35rem; color:var(--muted); font-size:.9rem; font-weight:700; }
+    .preference-grid select { min-height:44px; padding:.55rem; border:1px solid var(--line); border-radius:11px; background:#fff; color:var(--ink); font:inherit; }
+    .landing select { flex:1; min-height:48px; padding:.65rem .75rem; border:1px solid var(--line); border-radius:11px; background:#fff; color:var(--ink); font:inherit; }
+    #begin { border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer; }
+    #begin:disabled { cursor:not-allowed; opacity:.45; }
+    main[hidden], .landing[hidden] { display:none; }
+    @media (max-width:760px) { main { grid-template-columns:1fr; } .review-page { grid-template-columns:1fr; } .map-panel, .review-page .map-panel { min-height:430px; } #map { min-height:398px; } .panel { min-height:500px; } .preference-grid { grid-template-columns:1fr; } .landing-actions { flex-direction:column; } }
+  </style>
 </head>
 <body>
-    <h1>랜덤 점심 메뉴 추천</h1>
-    <div>
-        <button onclick="setCuisine('korean')">한식</button>
-        <button onclick="setCuisine('western')">양식</button>
-        <button onclick="setCuisine('chinese')">중식</button>
-    </div>
-    <button onclick="recommendMenu()">메뉴 추천</button>
-    <div id="menu"></div>
-    <div id="recent-menus">
-        <h2>최근 추천 메뉴</h2>
-        <ul id="recent-list"></ul>
-    </div>
+  <header class="wrap">
+    <div class="eyebrow">TRAVEL PICK</div>
+    <h1>이번 여행지는 어디로 갈까요?</h1>
+    <p class="lede">추천 장소를 하나씩 살펴보고, 마음에 드는 곳을 여행 목록에 담아보세요.</p>
+  </header>
 
-    <script>
-        const menus = {
-            korean: [
-                '김치찌개',
-                '비빔밥',
-                '제육볶음',
-                '된장찌개',
-                '불고기',
-                '삼겹살',
-                '떡볶이'
-            ],
-            western: [
-                '샌드위치',
-                '파스타',
-                '햄버거',
-                '피자',
-                '스테이크'
-            ],
-            chinese: [
-                '짜장면',
-                '짬뽕',
-                '탕수육',
-                '마파두부',
-                '볶음밥'
-            ]
+  <section id="region-picker" class="landing" aria-labelledby="region-title">
+    <div class="eyebrow">START HERE</div>
+    <h2 id="region-title">어디로 여행을 떠날까요?</h2>
+    <p>여행할 도시나 도를 먼저 선택하면, 해당 지역의 관광지를 추천해드릴게요.</p>
+    <div class="preference-grid">
+      <label for="travel-style">선호 관광방식<select id="travel-style"><option value="culture">문화·역사</option><option value="nature">자연·풍경</option><option value="food">맛집·카페</option><option value="activity">체험·액티비티</option></select></label>
+      <label for="travel-pace">여행 속도<select id="travel-pace"><option value="slow">여유롭게</option><option value="balanced">균형 있게</option><option value="fast">알차게</option></select></label>
+      <label for="travel-companion">동행 유형<select id="travel-companion"><option value="couple">커플</option><option value="solo">혼자</option><option value="family">가족</option><option value="friends">친구</option></select></label>
+    </div>
+    <div class="landing-actions">
+      <select id="region" aria-label="여행 지역 선택"><option value="">지역을 선택하세요</option></select>
+      <button id="begin" type="button" disabled>관광지 보기</button>
+    </div>
+  </section>
+
+  <main id="recommendations" class="wrap" hidden>
+    <section id="map-panel" class="map-panel" aria-label="대한민국 관광지 지도">
+      <div id="map" role="img" aria-label="선택한 관광지가 표시되는 대한민국 지도"></div>
+      <div id="map-status">지도를 불러오는 중입니다.</div>
+      <div id="map-api-error" class="api-error" role="alert" hidden></div>
+    </section>
+
+    <section id="planner-panel" class="panel" aria-live="polite">
+      <div id="step" class="progress"></div>
+      <h2 id="question"></h2>
+      <p id="hint" class="hint"></p>
+      <div id="choices" class="choices"></div>
+      <div id="complete" class="complete" hidden>좋아요! 지도에 담은 장소로 나만의 여행 목록이 완성됐어요.</div>
+      <div id="route-options" class="route-options" hidden>
+        <h3>이동 경로를 선택하세요</h3>
+        <div class="route-buttons">
+          <button class="route-button selected" type="button" data-mode="DRIVING">자동차</button>
+          <button class="route-button" type="button" data-mode="TRANSIT">대중교통</button>
+          <button class="route-button" type="button" data-mode="WALKING">도보</button>
+        </div>
+        <p id="route-status" role="status">선택한 관광지를 연결한 경로입니다.</p>
+      </div>
+      <div class="actions"><button id="restart" type="button">처음부터</button><button id="next" type="button" disabled>이 장소 선택</button><button id="finish" type="button" disabled>계획 완료</button></div>
+      <div class="selected-list"><h3>내 여행 목록</h3><ol id="selected"></ol></div>
+    </section>
+  </main>
+
+  <section id="review-page" class="review-page" hidden>
+    <div id="result-map-slot"></div>
+    <section id="review-panel" class="panel" aria-live="polite">
+      <div class="progress">TRAVEL PLAN</div>
+      <h2>여행 계획을 검토해보세요</h2>
+      <p class="hint">선택한 관광지와 구간별 이동수단이 지도에 표시되어 있습니다.</p>
+      <p id="review-summary" class="review-total"></p>
+      <h3>관광지 순서</h3>
+      <ol id="review-spots" class="review-list"></ol>
+      <h3>이동 경로</h3>
+      <ol id="review-routes" class="review-list"></ol>
+      <div class="actions"><button id="edit-plan" type="button">계획 수정</button><button id="new-plan" type="button">새 여행 계획</button></div>
+    </section>
+  </section>
+
+  <script>
+    const regions = [
+      { id:'seoul', name:'서울특별시' }, { id:'busan', name:'부산광역시' },
+      { id:'gangwon', name:'강원특별자치도' }, { id:'jeonbuk', name:'전북특별자치도' },
+      { id:'jeonnam', name:'전라남도' }, { id:'jeju', name:'제주특별자치도' }
+    ];
+    const rawSpots = [
+      { area:'seoul', name:'경복궁', region:'서울 종로구', description:'고궁의 고즈넉한 풍경과 북촌 산책', tags:['culture','slow','couple','family'], lat:37.579617, lng:126.977041 },
+      { area:'seoul', name:'남산서울타워', region:'서울 용산구', description:'서울 전경을 한눈에 보는 전망 명소', tags:['nature','slow','couple','friends'], lat:37.551169, lng:126.988227 },
+      { area:'seoul', name:'북촌한옥마을', region:'서울 종로구', description:'전통 한옥과 골목을 걷는 도심 여행', tags:['culture','slow','solo','couple'], lat:37.5826, lng:126.9830 },
+      { area:'gangwon', name:'강릉 안목해변', region:'강원 강릉시', description:'커피거리와 푸른 동해를 한 번에', tags:['food','nature','slow','couple'], lat:37.7717, lng:128.9486 },
+      { area:'gangwon', name:'오죽헌', region:'강원 강릉시', description:'고즈넉한 정원과 강릉의 역사 산책', tags:['culture','slow','family','solo'], lat:37.7783, lng:128.8788 },
+      { area:'gangwon', name:'정동진해변', region:'강원 강릉시', description:'탁 트인 바다와 일출을 즐기는 해변', tags:['nature','slow','couple','friends'], lat:37.6917, lng:129.0329 },
+      { area:'jeonbuk', name:'전주 한옥마을', region:'전북 전주시', description:'한옥 골목과 맛있는 전주 음식', tags:['culture','food','slow','family'], lat:35.8174, lng:127.1530 },
+      { area:'jeonbuk', name:'자만벽화마을', region:'전북 전주시', description:'알록달록한 벽화와 골목 풍경', tags:['culture','activity','balanced','friends'], lat:35.8193, lng:127.1585 },
+      { area:'jeonbuk', name:'덕진공원', region:'전북 전주시', description:'연꽃과 호수가 어우러진 도심 산책', tags:['nature','slow','family','solo'], lat:35.8479, lng:127.1237 },
+      { area:'jeonnam', name:'여수 오동도', region:'전남 여수시', description:'바다 산책로와 섬의 낭만', tags:['nature','slow','couple','family'], lat:34.7467, lng:127.7659 },
+      { area:'jeonnam', name:'향일암', region:'전남 여수시', description:'남해 일출을 만나는 바닷가 사찰', tags:['nature','culture','fast','solo'], lat:34.5935, lng:127.8035 },
+      { area:'jeonnam', name:'여수 해상케이블카', region:'전남 여수시', description:'바다 위에서 즐기는 여수의 파노라마', tags:['activity','nature','balanced','friends'], lat:34.7383, lng:127.7486 },
+      { area:'jeju', name:'제주 성산일출봉', region:'제주 서귀포시', description:'화산 지형 위에서 만나는 멋진 일출', tags:['nature','activity','fast','friends'], lat:33.4581, lng:126.9426 },
+      { area:'jeju', name:'만장굴', region:'제주 제주시', description:'신비로운 용암 동굴을 걷는 여행', tags:['nature','activity','balanced','family'], lat:33.5284, lng:126.7717 },
+      { area:'jeju', name:'협재해수욕장', region:'제주 제주시', description:'에메랄드빛 바다와 노을이 아름다운 해변', tags:['nature','slow','couple','family'], lat:33.3942, lng:126.2396 },
+      { area:'busan', name:'부산 감천문화마을', region:'부산 사하구', description:'알록달록한 골목과 바다 전망', tags:['culture','activity','balanced','friends'], lat:35.0975, lng:129.0106 },
+      { area:'busan', name:'해운대해수욕장', region:'부산 해운대구', description:'넓은 백사장과 부산의 대표 바다', tags:['nature','activity','slow','family'], lat:35.1587, lng:129.1604 },
+      { area:'busan', name:'광안리해수욕장', region:'부산 수영구', description:'광안대교 야경과 해변 카페를 즐기는 곳', tags:['food','nature','slow','couple'], lat:35.1532, lng:129.1187 },
+      { area:'seoul', name:'창덕궁', region:'서울 종로구', description:'후원과 어우러진 조선 왕궁의 아름다움', tags:['culture','slow','family','couple'], lat:37.5794, lng:126.9910 },
+      { area:'seoul', name:'덕수궁', region:'서울 중구', description:'도심 속 궁궐 돌담길과 근대 건축', tags:['culture','slow','solo','couple'], lat:37.5658, lng:126.9751 },
+      { area:'seoul', name:'청계천', region:'서울 종로구', description:'도심을 가로지르는 물길과 야간 산책', tags:['nature','slow','solo','couple'], lat:37.5692, lng:126.9788 },
+      { area:'seoul', name:'광화문광장', region:'서울 종로구', description:'역사와 문화행사가 펼쳐지는 도심 광장', tags:['culture','activity','balanced','family'], lat:37.5759, lng:126.9769 },
+      { area:'seoul', name:'국립중앙박물관', region:'서울 용산구', description:'한국의 역사와 문화를 만나는 박물관', tags:['culture','slow','family','solo'], lat:37.5239, lng:126.9804 },
+      { area:'seoul', name:'서울숲', region:'서울 성동구', description:'산책과 피크닉을 즐기는 도심 생태공원', tags:['nature','slow','family','friends'], lat:37.5443, lng:127.0374 },
+      { area:'seoul', name:'익선동한옥거리', region:'서울 종로구', description:'한옥 골목의 개성 있는 카페와 상점', tags:['food','activity','slow','friends'], lat:37.5735, lng:126.9897 },
+      { area:'gangwon', name:'경포대', region:'강원 강릉시', description:'경포호와 동해를 함께 조망하는 누각', tags:['nature','culture','slow','couple'], lat:37.7956, lng:128.8961 },
+      { area:'gangwon', name:'주문진해변', region:'강원 강릉시', description:'맑은 바다와 항구 먹거리를 즐기는 해변', tags:['food','nature','slow','family'], lat:37.8914, lng:128.8312 },
+      { area:'gangwon', name:'설악산국립공원', region:'강원 속초시', description:'웅장한 산세와 계절별 자연을 만나는 곳', tags:['nature','activity','fast','friends'], lat:38.1195, lng:128.4656 },
+      { area:'gangwon', name:'속초해수욕장', region:'강원 속초시', description:'설악산과 동해를 함께 즐기는 해변', tags:['nature','slow','family','friends'], lat:38.1904, lng:128.6033 },
+      { area:'gangwon', name:'아르떼뮤지엄 강릉', region:'강원 강릉시', description:'빛과 음악으로 즐기는 몰입형 미디어아트', tags:['culture','activity','balanced','friends'], lat:37.7613, lng:128.8936 },
+      { area:'gangwon', name:'하슬라아트월드', region:'강원 강릉시', description:'바다와 조각공원이 어우러진 예술 공간', tags:['culture','nature','balanced','couple'], lat:37.6448, lng:129.0403 },
+      { area:'gangwon', name:'대관령 양떼목장', region:'강원 평창군', description:'초원 산책과 목장 체험을 즐기는 곳', tags:['nature','activity','slow','family'], lat:37.6872, lng:128.7525 },
+      { area:'jeonbuk', name:'경기전', region:'전북 전주시', description:'조선 왕조의 역사와 고즈넉한 전각 산책', tags:['culture','slow','family','solo'], lat:35.8136, lng:127.1480 },
+      { area:'jeonbuk', name:'전동성당', region:'전북 전주시', description:'한옥마을 앞에 자리한 근대 역사 건축물', tags:['culture','slow','couple','solo'], lat:35.8133, lng:127.1490 },
+      { area:'jeonbuk', name:'국립전주박물관', region:'전북 전주시', description:'전북의 역사와 문화를 살펴보는 박물관', tags:['culture','slow','family','solo'], lat:35.8004, lng:127.0907 },
+      { area:'jeonbuk', name:'오성한옥마을', region:'전북 완주군', description:'호수와 한옥이 어우러진 여유로운 마을', tags:['nature','culture','slow','couple'], lat:35.8982, lng:127.2707 },
+      { area:'jeonbuk', name:'내장산국립공원', region:'전북 정읍시', description:'단풍과 계곡으로 유명한 산악 여행지', tags:['nature','activity','fast','friends'], lat:35.5083, lng:126.8893 },
+      { area:'jeonbuk', name:'광한루원', region:'전북 남원시', description:'춘향전의 배경이 된 전통 누원과 정원', tags:['culture','slow','couple','family'], lat:35.4023, lng:127.3793 },
+      { area:'jeonbuk', name:'변산반도국립공원', region:'전북 부안군', description:'채석강과 해안 절경을 만나는 국립공원', tags:['nature','activity','balanced','friends'], lat:35.6235, lng:126.5620 },
+      { area:'jeonnam', name:'여수엑스포해양공원', region:'전남 여수시', description:'바다와 전시·문화시설을 함께 즐기는 곳', tags:['culture','activity','balanced','family'], lat:34.7535, lng:127.7469 },
+      { area:'jeonnam', name:'돌산공원', region:'전남 여수시', description:'여수항과 야경을 내려다보는 전망 공원', tags:['nature','slow','couple','friends'], lat:34.7285, lng:127.7384 },
+      { area:'jeonnam', name:'순천만습지', region:'전남 순천시', description:'갈대밭과 철새를 만나는 생태 여행지', tags:['nature','slow','family','solo'], lat:34.8854, lng:127.5095 },
+      { area:'jeonnam', name:'죽녹원', region:'전남 담양군', description:'대나무 숲길을 걷는 힐링 명소', tags:['nature','slow','family','couple'], lat:35.3217, lng:126.9889 },
+      { area:'jeonnam', name:'목포 갓바위', region:'전남 목포시', description:'바닷가에 솟은 독특한 암석과 산책로', tags:['nature','slow','solo','couple'], lat:34.7905, lng:126.4350 },
+      { area:'jeonnam', name:'보성 녹차밭', region:'전남 보성군', description:'끝없이 펼쳐진 녹차밭의 초록 풍경', tags:['nature','food','slow','family'], lat:34.7182, lng:127.0800 },
+      { area:'jeonnam', name:'담양 메타세쿼이아길', region:'전남 담양군', description:'나무 터널을 걷는 대표 드라이브 명소', tags:['nature','slow','couple','friends'], lat:35.3210, lng:127.0053 },
+      { area:'jeju', name:'한라산국립공원', region:'제주 제주시', description:'제주 중심의 계절별 산악 풍경과 탐방로', tags:['nature','activity','fast','friends'], lat:33.3617, lng:126.5292 },
+      { area:'jeju', name:'우도', region:'제주 제주시', description:'해안 절벽과 초원이 어우러진 섬 여행', tags:['nature','activity','balanced','couple'], lat:33.5043, lng:126.9543 },
+      { area:'jeju', name:'섭지코지', region:'제주 서귀포시', description:'바다 절벽과 초원이 펼쳐진 해안 산책', tags:['nature','slow','couple','family'], lat:33.4306, lng:126.9273 },
+      { area:'jeju', name:'천지연폭포', region:'제주 서귀포시', description:'울창한 숲길 끝에서 만나는 폭포', tags:['nature','slow','family','couple'], lat:33.2450, lng:126.5545 },
+      { area:'jeju', name:'제주돌문화공원', region:'제주 제주시', description:'제주의 돌 문화와 신화를 만나는 공원', tags:['culture','nature','slow','family'], lat:33.4481, lng:126.6540 },
+      { area:'jeju', name:'카멜리아힐', region:'제주 서귀포시', description:'동백과 계절 꽃을 즐기는 정원 여행', tags:['nature','slow','couple','family'], lat:33.2898, lng:126.3682 },
+      { area:'jeju', name:'곽지해수욕장', region:'제주 제주시', description:'맑은 바다와 노을을 즐기는 해변', tags:['nature','slow','family','friends'], lat:33.4518, lng:126.3044 },
+      { area:'busan', name:'자갈치시장', region:'부산 중구', description:'부산의 해산물과 활기찬 시장 풍경', tags:['food','activity','balanced','friends'], lat:35.0967, lng:129.0300 },
+      { area:'busan', name:'태종대', region:'부산 영도구', description:'해안 절벽과 등대가 있는 자연공원', tags:['nature','activity','slow','family'], lat:35.0514, lng:129.0877 },
+      { area:'busan', name:'해동용궁사', region:'부산 기장군', description:'바닷가 절벽에 자리한 사찰과 해안 풍경', tags:['culture','nature','slow','couple'], lat:35.1880, lng:129.2231 },
+      { area:'busan', name:'부산시민공원', region:'부산 부산진구', description:'도심에서 산책과 피크닉을 즐기는 공원', tags:['nature','slow','family','friends'], lat:35.1688, lng:129.0571 },
+      { area:'busan', name:'송도해수욕장', region:'부산 서구', description:'해상케이블카와 바다 산책을 즐기는 해변', tags:['nature','activity','balanced','family'], lat:35.0753, lng:129.0175 },
+      { area:'busan', name:'오륙도 스카이워크', region:'부산 남구', description:'투명 바닥 위에서 즐기는 해안 전망', tags:['nature','activity','fast','friends'], lat:35.1007, lng:129.1235 },
+      { area:'busan', name:'국제시장', region:'부산 중구', description:'부산 먹거리와 오래된 시장 골목 여행', tags:['food','activity','balanced','friends'], lat:35.1028, lng:129.0260 }
+    ];
+    const tourismSource = '한국관광공사 대한민국 구석구석(TourAPI)';
+    const spotDetails = {
+      '경복궁': { fee:'성인 3,000원', duration:120, hours:'09:00~18:00(계절별 변동)', address:'서울 종로구 사직로 161' },
+      '남산서울타워': { fee:'전망대 성인 약 21,000원', duration:90, hours:'10:30~22:30(변동 가능)', address:'서울 용산구 남산공원길 105' },
+      '북촌한옥마을': { fee:'무료(일부 체험 유료)', duration:90, hours:'상시(주민 생활지역 방문 예절 필요)', address:'서울 종로구 북촌로 일대' },
+      '강릉 안목해변': { fee:'무료', duration:120, hours:'상시', address:'강원 강릉시 창해로 14번길 일대' },
+      '오죽헌': { fee:'성인 3,000원', duration:90, hours:'09:00~18:00', address:'강원 강릉시 율곡로 3139번길 24' },
+      '정동진해변': { fee:'무료', duration:90, hours:'상시', address:'강원 강릉시 강동면 정동진리' },
+      '전주 한옥마을': { fee:'무료(일부 체험 유료)', duration:180, hours:'상시', address:'전북 전주시 완산구 기린대로 99' },
+      '자만벽화마을': { fee:'무료', duration:60, hours:'상시', address:'전북 전주시 완산구 교동 일대' },
+      '덕진공원': { fee:'무료', duration:90, hours:'상시', address:'전북 전주시 덕진구 권삼득로 390' },
+      '여수 오동도': { fee:'무료(동백열차 유료)', duration:120, hours:'상시', address:'전남 여수시 오동도로 222' },
+      '향일암': { fee:'성인 약 2,500원', duration:90, hours:'06:00~18:00(변동 가능)', address:'전남 여수시 돌산읍 향일암로 60' },
+      '여수 해상케이블카': { fee:'왕복 성인 약 17,000원', duration:90, hours:'09:30~21:30(변동 가능)', address:'전남 여수시 돌산읍 돌산로 3600-1' },
+      '제주 성산일출봉': { fee:'성인 5,000원', duration:120, hours:'07:00~20:00(변동 가능)', address:'제주 서귀포시 성산읍 일출로 284-12' },
+      '만장굴': { fee:'성인 약 4,000원', duration:90, hours:'09:00~18:00(방문 전 운영 여부 확인)', address:'제주 제주시 구좌읍 만장굴길 182' },
+      '협재해수욕장': { fee:'무료', duration:120, hours:'상시', address:'제주 제주시 한림읍 협재리 2497-1' },
+      '부산 감천문화마을': { fee:'무료', duration:120, hours:'09:00~18:00', address:'부산 사하구 감내2로 203' },
+      '해운대해수욕장': { fee:'무료', duration:120, hours:'상시', address:'부산 해운대구 해운대해변로 264' },
+      '광안리해수욕장': { fee:'무료', duration:120, hours:'상시', address:'부산 수영구 광안해변로 219' }
+    };
+    const defaultSpotDetails = { fee:'현장 확인 필요', duration:90, hours:'방문 전 확인', address:'한국관광공사 데이터에서 확인' };
+    const allSpots = rawSpots.map(spot => ({ ...spot, ...defaultSpotDetails, ...spotDetails[spot.name], source:tourismSource, sourceUrl:'https://api.visitkorea.or.kr/' }));
+    const GOOGLE_MAPS_API_KEY = 'AIzaSyB_OLEFE343UFaBqOKd0-fRsmdCXLFHEEo';
+    let preferences = { style:'culture', pace:'slow', companion:'couple' };
+    let spots = [], step = 0, selected = [], legModes = [], routeSummaries = [], current = null, routeChosen = true, map, markers = [], infoWindow, directionsService, routeRenderers = [], routeRequestId = 0, selectedMode = 'DRIVING';
+    const $ = id => document.getElementById(id);
+    function showApiError(message) {
+      $('map-api-error').textContent = `지도 API 오류: ${message}`;
+      $('map-api-error').hidden = false;
+      $('map-status').hidden = Boolean(map);
+      if (!map) $('map-status').textContent = '지도를 사용할 수 없습니다. 아래 오류를 확인해주세요.';
+    }
+    function clearApiError() {
+      $('map-api-error').hidden = true;
+    }
+    window.gm_authFailure = () => showApiError('API 키 인증에 실패했습니다. 키 유효성, 결제 계정, Maps JavaScript API 활성화와 HTTP referrer 제한을 확인해주세요.');
+    function recommendationAgent(regionId, preference) {
+      return allSpots.filter(spot => spot.area === regionId).map(spot => ({
+        ...spot,
+        score:(spot.tags.includes(preference.style) ? 5 : 0) + (spot.tags.includes(preference.pace) ? 3 : 0) + (spot.tags.includes(preference.companion) ? 2 : 0)
+      })).sort((a, b) => b.score - a.score).map((spot, index) => ({ ...spot, rank:index + 1 }));
+    }
+    $('region').insertAdjacentHTML('beforeend', regions.map(region => `<option value="${region.id}">${region.name}</option>`).join(''));
+    $('region').addEventListener('change', () => { $('begin').disabled = !$('region').value; });
+    $('begin').addEventListener('click', () => {
+      preferences = { style:$('travel-style').value, pace:$('travel-pace').value, companion:$('travel-companion').value };
+      spots = recommendationAgent($('region').value, preferences);
+      if (!spots.length) return;
+      step = 0; selected = []; legModes = []; routeSummaries = []; current = null; routeChosen = true;
+      $('region-picker').hidden = true;
+      $('recommendations').hidden = false;
+      render();
+      loadMap();
+    });
+    document.querySelectorAll('.route-button').forEach(button => button.addEventListener('click', () => {
+      selectedMode = button.dataset.mode;
+      routeChosen = true;
+      document.querySelectorAll('.route-button').forEach(item => item.classList.toggle('selected', item === button));
+      $('route-status').textContent = selected.length ? `다음 관광지까지 ${button.textContent} 이동으로 추가합니다.` : '첫 번째 관광지에는 이동 경로가 필요하지 않습니다.';
+      if (current) $('next').disabled = false;
+    }));
+    function render() {
+      const done = step >= spots.length;
+      $('step').textContent = done ? '추천 완료' : `${step + 1} / ${spots.length} 추천`;
+      $('question').textContent = done ? '여행 목록을 확인해보세요' : '이번에는 이곳을 추천해요';
+      $('hint').textContent = done ? '선택한 관광지는 지도에서 파란색으로 확인할 수 있어요.' : '여러 선택지 중 마음에 드는 관광지를 고르면 다음 추천으로 넘어갑니다.';
+      $('choices').innerHTML = done ? '' : spots.slice(step, step + 3).map(spot => `<button class="choice" type="button" data-name="${spot.name}"><strong>${spot.name} <small class="recommendation-badge">${spot.rank === 1 ? '우선 추천' : `추천 ${spot.rank}순위`}</small></strong><span>${spot.region} · ${spot.description}</span></button>`).join('');
+      $('complete').hidden = !done;
+      $('route-options').hidden = !current || done;
+      $('next').disabled = !current || done || (selected.length > 0 && !routeChosen);
+      $('next').textContent = done ? '추천 완료' : '이 장소 선택';
+      $('finish').disabled = (!selected.length && !current) || (current && selected.length > 0 && !routeChosen);
+      document.querySelectorAll('.choice').forEach(button => button.addEventListener('click', () => {
+        current = spots.find(spot => spot.name === button.dataset.name);
+        routeChosen = selected.length === 0;
+        document.querySelectorAll('.choice').forEach(item => item.classList.remove('selected'));
+        button.classList.add('selected');
+        $('route-options').hidden = false;
+        $('route-status').textContent = selected.length ? '이 관광지까지 이동할 방법을 선택하세요.' : '첫 관광지까지의 출발 방법은 경로에 포함하지 않습니다.';
+        $('next').disabled = selected.length > 0 && !routeChosen;
+        $('finish').disabled = selected.length > 0 && !routeChosen;
+        renderMarkers();
+      }));
+      $('selected').innerHTML = selected.map(spot => `<li>${spot.name} <small>(${spot.region})</small></li>`).join('') || '<li>아직 선택한 장소가 없어요.</li>';
+      renderMarkers();
+    }
+    function renderMarkers() {
+      if (!map) return;
+      markers.forEach(({ marker, spot }) => marker.setZIndex(selected.includes(spot) ? 2 : 1));
+      if (current) {
+        const marker = markers.find(item => item.spot === current)?.marker;
+        if (marker) { map.panTo(marker.getPosition()); infoWindow.setContent(`<div style="padding:8px 12px;font-size:13px"><strong>${current.name}</strong><br>${current.region}</div>`); infoWindow.open(map, marker); }
+      }
+    }
+    function syncMarkers() {
+      markers.forEach(({ marker }) => marker.setMap(null));
+      markers = spots.map(spot => ({ marker:new google.maps.Marker({ map, position:{ lat:spot.lat, lng:spot.lng }, title:spot.name }), spot }));
+    }
+    function clearRoutes() {
+      routeRequestId += 1;
+      routeRenderers.forEach(renderer => renderer.setMap(null));
+      routeRenderers = [];
+    }
+    function estimateRouteCost(mode, meters, route) {
+      if (mode === 'WALKING') return '무료';
+      if (mode === 'TRANSIT' && route.fare) return `약 ${route.fare.value.toLocaleString()}원`;
+      if (mode === 'TRANSIT') return '대중교통 요금 확인 필요';
+      // ponytail: 거리 기반 연료비 추정, 실제 통행료·차종 반영은 교통 API 연동 시 추가.
+      return `약 ${(Math.round(meters / 1000 * 180 / 100) * 100).toLocaleString()}원`;
+    }
+    function requestRoutes() {
+      if (!directionsService || selected.length < 2) return;
+      clearRoutes();
+      clearApiError();
+      const requestId = ++routeRequestId;
+      routeSummaries = selected.slice(1).map(() => null);
+      selected.slice(0, -1).forEach((from, index) => {
+        const to = selected[index + 1];
+        const mode = legModes[index] || 'DRIVING';
+        const request = {
+          origin:{ lat:from.lat, lng:from.lng },
+          destination:{ lat:to.lat, lng:to.lng },
+          travelMode:google.maps.TravelMode[mode]
         };
-
-        let selectedCuisine = 'korean';
-        let recentMenus = [];
-
-        function setCuisine(cuisine) {
-            selectedCuisine = cuisine;
-        }
-
-        function recommendMenu() {
-            const selectedMenus = menus[selectedCuisine];
-            const randomIndex = Math.floor(Math.random() * selectedMenus.length);
-            const selectedMenu = selectedMenus[randomIndex];
-            document.getElementById('menu').innerText = selectedMenu;
-
-            recentMenus.unshift(selectedMenu);
-            if (recentMenus.length > 5) {
-                recentMenus.pop();
-            }
-
-            updateRecentMenus();
-        }
-
-        function updateRecentMenus() {
-            const recentList = document.getElementById('recent-list');
-            recentList.innerHTML = '';
-            recentMenus.forEach(menu => {
-                const li = document.createElement('li');
-                li.innerText = menu;
-                recentList.appendChild(li);
-            });
-        }
-    </script>
+        if (mode === 'TRANSIT') request.transitOptions = { departureTime:new Date(Date.now() + 3600000) };
+        directionsService.route(request, (result, status) => {
+          if (requestId !== routeRequestId) return;
+          if (status !== 'OK') {
+            routeSummaries[index] = { error:true };
+            const routeError = { ZERO_RESULTS:'경로가 없습니다.', REQUEST_DENIED:'경로 API가 거부되었습니다. Directions API 활성화와 키 제한을 확인해주세요.', OVER_QUERY_LIMIT:'경로 API 사용량 한도를 초과했습니다.', INVALID_REQUEST:'경로 요청이 올바르지 않습니다.' }[status] || `경로 API 응답 오류(${status})`;
+            showApiError(routeError);
+            if (!$('review-page').hidden) renderReview();
+            return;
+          }
+          const renderer = new google.maps.DirectionsRenderer({ map, suppressMarkers:true, preserveViewport:index > 0 });
+          renderer.setDirections(result);
+          routeRenderers.push(renderer);
+          const route = result.routes[0];
+          const meters = route.legs.reduce((total, leg) => total + (leg.distance?.value || 0), 0);
+          routeSummaries[index] = { duration:route.legs.reduce((total, leg) => total + (leg.duration?.value || 0), 0), distance:meters, cost:estimateRouteCost(mode, meters, route) };
+          if (!$('review-page').hidden) renderReview();
+        });
+      });
+    }
+    function addCurrent() {
+      if (!current || selected.includes(current) || (selected.length > 0 && !routeChosen)) return;
+      if (selected.length) legModes.push(selectedMode);
+      selected.push(current);
+      step += 1;
+      current = null;
+      render();
+      if (map) requestRoutes();
+    }
+    function finishPlan() {
+      if (current && selected.length > 0 && !routeChosen) return;
+      addCurrent();
+      if (!selected.length) return;
+      $('recommendations').hidden = true;
+      $('review-page').hidden = false;
+      $('result-map-slot').appendChild($('map-panel'));
+      renderReview();
+      if (map) requestRoutes();
+    }
+    function renderReview() {
+      const visitMinutes = selected.reduce((total, spot) => total + (spot.duration || 0), 0);
+      $('review-summary').textContent = `${selected.length}곳 · 관광 예상 ${Math.floor(visitMinutes / 60)}시간 ${visitMinutes % 60}분 · 상세 정보 출처: ${selected[0]?.source || '공공 관광 데이터'}`;
+      $('review-spots').innerHTML = selected.map((spot, index) => `<li><strong>${index + 1}. ${spot.name}</strong><br><small>${spot.region} · ${spot.description}<br>입장료: ${spot.fee} · 예상 체류: ${spot.duration}분<br>운영: ${spot.hours}<br>주소: ${spot.address}<br><a href="${spot.sourceUrl}" target="_blank" rel="noreferrer">관광공사 데이터 확인</a></small></li>`).join('');
+      $('review-routes').innerHTML = selected.length < 2 ? '<li>선택한 관광지가 하나라 이동 경로가 없습니다.</li>' : selected.slice(1).map((spot, index) => { const route = routeSummaries[index]; const mode = legModes[index] === 'TRANSIT' ? '대중교통' : legModes[index] === 'WALKING' ? '도보' : '자동차'; const duration = route?.error ? '경로 계산 실패' : route ? `${Math.ceil(route.duration / 60)}분 · ${(route.distance / 1000).toFixed(1)}km` : '경로 계산 중'; return `<li>${selected[index].name} → ${spot.name}<br><small>${mode} · ${duration} · 비용: ${route?.cost || (route?.error ? '확인 필요' : '계산 중')}</small></li>`; }).join('');
+    }
+    $('next').addEventListener('click', addCurrent);
+    $('finish').addEventListener('click', finishPlan);
+    $('restart').addEventListener('click', () => { step = 0; selected = []; legModes = []; routeSummaries = []; current = null; routeChosen = true; clearRoutes(); render(); });
+    $('edit-plan').addEventListener('click', () => { $('recommendations').prepend($('map-panel')); $('review-page').hidden = true; $('recommendations').hidden = false; render(); });
+    $('new-plan').addEventListener('click', () => { $('recommendations').prepend($('map-panel')); clearRoutes(); selected = []; legModes = []; routeSummaries = []; current = null; routeChosen = true; spots = []; $('review-page').hidden = true; $('recommendations').hidden = true; $('region-picker').hidden = false; $('region').value = ''; $('begin').disabled = true; });
+    function initMap() {
+      try {
+        map = new google.maps.Map($('map'), { center:{ lat:36.35, lng:127.8 }, zoom:13 });
+        infoWindow = new google.maps.InfoWindow();
+        directionsService = new google.maps.DirectionsService();
+        syncMarkers();
+        clearApiError();
+        $('map-status').hidden = true;
+        renderMarkers();
+        if (selected.length >= 2) requestRoutes();
+      } catch (error) {
+        showApiError('지도를 초기화하지 못했습니다. Maps JavaScript API 활성화와 브라우저 콘솔의 상세 오류를 확인해주세요.');
+      }
+    }
+    function loadMap() {
+      if (GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') { showApiError('Google Maps API 키가 설정되지 않았습니다.'); return; }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&loading=async&callback=initMap&language=ko&region=KR`;
+      script.onerror = () => showApiError('Google Maps JavaScript API를 불러오지 못했습니다. 네트워크, API 키, 결제 계정과 HTTP referrer 제한을 확인해주세요.');
+      document.head.appendChild(script);
+    }
+    window.initMap = initMap;
+    $('recommendations').hidden = true;
+  </script>
 </body>
 </html>
