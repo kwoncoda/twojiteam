@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../../features/auth/session';
+import { useAuth } from '../../app/providers/AuthProvider';
 import styles from './LoginPage.module.css';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const submit = (event: FormEvent) => {
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    // mock: 실제 인증 없이 세션 플래그만 세우고 홈으로 (백엔드 연동 시 auth.service로 교체)
-    login();
-    navigate('/');
+    setError(''); setBusy(true);
+    try { await signIn(email, password); navigate('/'); } catch (caught) { setError(caught instanceof Error ? caught.message : '로그인에 실패했습니다.'); } finally { setBusy(false); }
   };
   return (
     <div className={styles.wrap}>
@@ -29,8 +31,9 @@ export function LoginPage() {
         <label className={styles.field} htmlFor="login-password">비밀번호
           <input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" autoComplete="current-password" />
         </label>
+        {error && <p className={styles.error} role="alert">{error}</p>}
 
-        <button type="submit" className={`button button-primary ${styles.submit}`}>로그인</button>
+        <button type="submit" className={`button button-primary ${styles.submit}`} disabled={busy}>{busy ? '로그인 중...' : '로그인'}</button>
 
         <div className={styles.divider}>또는</div>
 
@@ -47,7 +50,7 @@ export function LoginPage() {
         </div>
 
         <p className={styles.signup}>아직 회원이 아니신가요? <Link to="/signup">회원가입</Link></p>
-        <span className={styles.mockTag}>테스트용 목업 · 실제 인증 없음</span>
+        <span className={styles.mockTag}>Supabase 이메일 인증</span>
       </form>
     </div>
   );
