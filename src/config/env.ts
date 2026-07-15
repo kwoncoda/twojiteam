@@ -1,4 +1,4 @@
-const dataMode = import.meta.env.VITE_DATA_MODE === 'supabase' ? 'supabase' : 'mock';
+const dataMode = import.meta.env.PROD || import.meta.env.VITE_DATA_MODE === 'supabase' ? 'supabase' : 'mock';
 const configuredOpenAIRecommendationUrl = import.meta.env.VITE_OPENAI_RECOMMENDATION_URL?.trim() ?? '';
 const validOpenAIRecommendationUrl = configuredOpenAIRecommendationUrl === '' || configuredOpenAIRecommendationUrl === '/api/recommendations' || /^https?:\/\/[^\s]+$/.test(configuredOpenAIRecommendationUrl);
 
@@ -14,7 +14,7 @@ export const env = {
 
 export function validateEnv(): string[] {
   if (env.dataMode === 'supabase' && (!env.supabaseUrl || !env.supabaseAnonKey)) {
-    return ['VITE_DATA_MODE=supabase requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'];
+    return ['Supabase mode requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'];
   }
   return [];
 }

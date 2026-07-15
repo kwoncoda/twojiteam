@@ -118,12 +118,20 @@ export function ReviewPage() {
               <Button type="button" onClick={openSaveDialog}>저장</Button>
               <Button variant="secondary" type="button" onClick={() => { setPlan(null); navigate('/'); }}>새 여행 계획</Button>
             </div>
+            {saveError && <div className={styles.warnings} role="alert"><strong>저장하지 못했습니다</strong><p>{saveError}</p></div>}
             {saved && <p className={styles.saved} role="status">여행 계획을 저장했어요. <Link to="/mypage">마이페이지에서 보기</Link></p>}
             {undoPlan && <div className={styles.undoMessage} role="status" aria-live="polite">관광지를 삭제했어요. <button type="button" onClick={restoreDeletedSpot}>복구</button></div>}
             {saveDialogOpen && <div className={styles.modalBackdrop} role="presentation"><form className={styles.saveDialog} role="dialog" aria-modal="true" aria-labelledby="save-dialog-title" onSubmit={savePlan}><h3 id="save-dialog-title">여행 계획 저장</h3><label htmlFor="course-title">계획 이름</label><input id="course-title" value={courseTitleDraft} onChange={(event) => setCourseTitleDraft(event.target.value)} autoFocus maxLength={60} /><div className={styles.dialogActions}><Button variant="secondary" type="button" onClick={() => setSaveDialogOpen(false)}>취소</Button><Button type="submit">저장</Button></div></form></div>}
           </section>
         </div>
       </PageContainer>
+      {saving && <div className={styles.saveOverlay} role="status" aria-live="polite">
+        <div className={`${styles.saveOrb} ${saveComplete ? styles.saveOrbComplete : ''}`}>
+          <div className={styles.saveOrbCore}>{saveComplete ? '✓' : '✦'}</div>
+        </div>
+        <strong>{saveComplete ? '저장 완료!' : '여행 코스 저장 중...'}</strong>
+        <span>{saveComplete ? '마이페이지로 이동할게요' : '잠깐만 기다려주세요'}</span>
+      </div>}
     </>
   );
 }

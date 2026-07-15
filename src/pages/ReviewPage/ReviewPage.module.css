@@ -20,7 +20,7 @@
 .ticket::before { left: -9px; }
 .ticket::after { right: -9px; }
 .index { width: 30px; height: 30px; flex: none; border-radius: 999px; background: var(--brand); color: #fff; font-weight: 800; display: grid; place-items: center; }
-.thumb { width: 44px; height: 44px; flex: none; border-radius: 11px; background: linear-gradient(135deg, #eaf1ff, #dbe7ff); color: var(--brand-strong); font-weight: 800; display: grid; place-items: center; }
+.thumb { width: 44px; height: 44px; flex: none; border-radius: 11px; background: linear-gradient(135deg, #eaf1ff, #dbe7ff); https://github.com/kwoncoda/twojiteam/pull/22/conflict?name=src%252Fpages%252FReviewPage%252FReviewPage.tsx&ancestor_oid=798afeafdb2f7defb13b16de5f81fc7199e2caf7&base_oid=36648c2588db401a7da8d999a30eddfd50be03e6&head_oid=87369b4085a4ff1a3290a86f5341b0c566245cedcolor: var(--brand-strong); font-weight: 800; display: grid; place-items: center; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .ticketBody { flex: 1; display: grid; gap: .15rem; min-width: 0; }
 .ticketBody span, .ticketBody small { color: var(--muted); font-size: .85rem; }
