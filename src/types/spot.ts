@@ -14,6 +14,7 @@ export interface Spot {
   latitude: number;
   longitude: number;
   category: TravelStyle;
+  venueType?: 'restaurant' | 'cafe' | 'bakery';
   tags: string[];
   description: string;
   photoUrl?: string;

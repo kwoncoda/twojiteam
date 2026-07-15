@@ -36,12 +36,12 @@ export function RecommendationCard({ spot, selected, liked = false, mapColor, on
         </div>
         <div className={styles.info}>
           <div className={styles.titleRow}><span className={styles.categoryIcon} aria-label={categoryMeta[spot.category].label} title={categoryMeta[spot.category].label}>{categoryMeta[spot.category].icon}</span>{spot.name}</div>
-          {mapColor && <span className={styles.mapColor} style={{ backgroundColor: mapColor.value }}>지도 {mapColor.name}</span>}
           <p className={styles.desc}>{spot.region} · {spot.description}</p>
           {spot.tags.length > 0 && <div className={styles.tags}>{spot.tags.slice(0, 3).map((tag) => <span key={tag} className={styles.tag}>#{tag}</span>)}</div>}
           {spot.reason && <p className={styles.reason}>{spot.reason}</p>}
         </div>
       </button>
+      {mapColor && <div className={styles.mapColor} style={{ backgroundColor: mapColor.value }} aria-label={`지도 표시 색상 ${mapColor.name}`} title={`지도 표시 색상: ${mapColor.name}`} />}
     </article>
   );
 }

@@ -20,4 +20,13 @@ describe('getRecommendations', () => {
     const result = getRecommendations(spots.map((spot) => spot.id === 'cafe' ? { ...spot, category: 'food', tags: ['food'] } : spot), { ...context, preferences: { ...context.preferences, style: 'food' } });
     expect(result[0].category).toBe('food');
   });
+  it('skips an immediately repeated restaurant but keeps cafes eligible', () => {
+    const foodSpots = [
+      { ...spots[2], id: 'restaurant', venueType: 'restaurant' as const, category: 'food' as const, tags: ['food'] },
+      { ...spots[2], id: 'cafe-2', venueType: 'cafe' as const, category: 'food' as const, tags: ['food'] }
+    ];
+    const result = getRecommendations(foodSpots, { ...context, previous: foodSpots[0] });
+    expect(result.some((spot) => spot.venueType === 'restaurant')).toBe(false);
+    expect(result.some((spot) => spot.venueType === 'cafe')).toBe(true);
+  });
 });
