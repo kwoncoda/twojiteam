@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../../components/layout/Header/Header';
 import { PageContainer } from '../../components/layout/PageContainer/PageContainer';
@@ -23,7 +24,7 @@ const transportIcon = (mode: TransportMode, details?: string) => {
 };
 
 export function ReviewPage() {
-  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState(''); const [undoPlan, setUndoPlan] = useState<TravelPlan | null>(null);
+  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState(''); const [undoPlan, setUndoPlan] = useState<TravelPlan | null>(null); const [saveDialogOpen, setSaveDialogOpen] = useState(false); const [courseTitleDraft, setCourseTitleDraft] = useState('');
   useEffect(() => { if (!plan) navigate('/'); }, [navigate, plan]);
   useEffect(() => { if (!undoPlan) return; const timeout = window.setTimeout(() => setUndoPlan(null), 5000); return () => window.clearTimeout(timeout); }, [undoPlan]);
   const routeKey = plan?.spots.slice(0, -1).map((item, index) => `${item.spot.id}:${plan.spots[index + 1].spot.id}:${plan.spots[index + 1].transportMode ?? 'DRIVING'}`).join('|') ?? '';
@@ -58,7 +59,8 @@ export function ReviewPage() {
   const { visitMinutes, travelMinutes, estimatedCost: cost, currency } = getItineraryTotals(selectedDayPlan);
   const deleteSpot = (id: string) => { if (!plan) return; setUndoPlan(plan); setSaved(false); removeSpot(id); };
   const restoreDeletedSpot = () => { if (!undoPlan) return; setPlan(undoPlan); setUndoPlan(null); };
-  const savePlan = async () => { await save(); addSavedCourse(planToCourse(plan)); setSaved(true); };
+  const openSaveDialog = () => { setCourseTitleDraft(plan.title); setSaveDialogOpen(true); };
+  const savePlan = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const namedPlan = { ...plan, title: courseTitleDraft.trim() || plan.title }; setPlan(namedPlan); await save(namedPlan); addSavedCourse(planToCourse(namedPlan)); setSaveDialogOpen(false); setSaved(true); };
   return (
     <>
       <Header />
@@ -113,16 +115,15 @@ export function ReviewPage() {
             </ol>
             <div className={styles.actions}>
               <Button variant="secondary" type="button" onClick={() => navigate('/recommendations')}>계획 수정</Button>
-              <Button type="button" onClick={savePlan}>저장</Button>
+              <Button type="button" onClick={openSaveDialog}>저장</Button>
               <Button variant="secondary" type="button" onClick={() => { setPlan(null); navigate('/'); }}>새 여행 계획</Button>
             </div>
             {saved && <p className={styles.saved} role="status">여행 계획을 저장했어요. <Link to="/mypage">마이페이지에서 보기</Link></p>}
             {undoPlan && <div className={styles.undoMessage} role="status" aria-live="polite">관광지를 삭제했어요. <button type="button" onClick={restoreDeletedSpot}>복구</button></div>}
+            {saveDialogOpen && <div className={styles.modalBackdrop} role="presentation"><form className={styles.saveDialog} role="dialog" aria-modal="true" aria-labelledby="save-dialog-title" onSubmit={savePlan}><h3 id="save-dialog-title">여행 계획 저장</h3><label htmlFor="course-title">계획 이름</label><input id="course-title" value={courseTitleDraft} onChange={(event) => setCourseTitleDraft(event.target.value)} autoFocus maxLength={60} /><div className={styles.dialogActions}><Button variant="secondary" type="button" onClick={() => setSaveDialogOpen(false)}>취소</Button><Button type="submit">저장</Button></div></form></div>}
           </section>
         </div>
       </PageContainer>
     </>
   );
 }
-
-

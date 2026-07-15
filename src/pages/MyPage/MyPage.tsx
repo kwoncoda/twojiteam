@@ -53,7 +53,10 @@ export function MyPage() {
                 <div key={course.id} className={styles.savedCard}>
                   <button type="button" className={styles.shareBtn} aria-label="공유" onClick={() => share(`/mypage/course/${course.id}`)}>{shareIcon}</button>
                   <Link to={`/mypage/course/${course.id}`} className={styles.savedLink}>
-                    <div className={styles.savedThumb} aria-hidden="true">{course.initial}</div>
+                    <div className={`${styles.savedThumb} ${course.spots.filter((spot) => spot.photoUrl).length > 1 ? styles.savedThumbGrid : ''}`} aria-hidden="true">
+                      {course.spots.filter((spot) => spot.photoUrl).slice(0, 3).map((spot) => <img key={spot.name} src={spot.photoUrl} alt="" />)}
+                      {!course.spots.some((spot) => spot.photoUrl) && course.initial}
+                    </div>
                     <div className={styles.savedBody}>
                       <div className={styles.savedName}>{course.name}</div>
                       <div className={styles.savedMeta}>{courseMeta(course)}</div>

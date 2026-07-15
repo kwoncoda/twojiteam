@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { planToCourse } from './savedCourses.store';
+import { describe, expect, it, vi } from 'vitest';
+import { planToCourse, updateSavedCourseName } from './savedCourses.store';
 import type { TravelPlan } from '../../types/travelPlan';
 
 const plan: TravelPlan = {
@@ -16,5 +16,14 @@ describe('planToCourse', () => {
     expect(course.plan?.routes[0]?.durationMinutes).toBe(20);
     expect(course.plan?.spots[1].transportMode).toBe('TRANSIT');
     expect(course.spots[0].photoUrl).toBe('https://images.example/a.jpg');
+  });
+});
+
+describe('updateSavedCourseName', () => {
+  it('저장 코스와 원본 계획의 이름을 함께 변경한다', () => {
+    const course = planToCourse(plan);
+    vi.stubGlobal('localStorage', { getItem: () => JSON.stringify([course]), setItem: () => undefined, removeItem: () => undefined });
+    expect(updateSavedCourseName(plan.id, '새 이름')[0].plan?.title).toBe('새 이름');
+    vi.unstubAllGlobals();
   });
 });

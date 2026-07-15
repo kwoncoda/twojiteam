@@ -12,6 +12,7 @@ import { formatRouteCost } from '../../features/routes/routeCost.utils';
 import { TravelMap } from '../../features/map/components/TravelMap';
 import { buildSchedule } from '../../features/schedule-validation/scheduleValidation.service';
 import { useTravelPlan } from '../../app/providers/TravelPlanProvider';
+import { updateSavedCourseName } from '../../features/saved-courses/savedCourses.store';
 import styles from './CourseDetailPage.module.css';
 
 const clockIcon = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>;
@@ -24,8 +25,11 @@ export function CourseDetailPage() {
   const navigate = useNavigate();
   const { setPlan } = useTravelPlan();
   const { message, showToast } = useToast();
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(course?.name ?? '');
   const share = () => { void copyShareLink(`/mypage/course/${courseId}`).then((ok) => showToast(ok ? '링크가 복사되었어요.' : '복사에 실패했어요.')); };
   const editPlan = () => { if (!course?.plan) return; setPlan({ ...course.plan, status: 'draft' }); navigate('/recommendations'); };
+  const renameCourse = () => { if (!course || !nameDraft.trim()) return; updateSavedCourseName(course.id, nameDraft.trim()); setEditingName(false); };
   const planningDates = useMemo(() => {
     if (!course?.plan) return [];
     const dates: string[] = [];
@@ -57,7 +61,7 @@ export function CourseDetailPage() {
           <div className={styles.inner}>
             <div className={styles.header}>
               <div>
-                <h2 className={styles.title}>{course.name}</h2>
+                {editingName ? <div className={styles.renameRow}><input className={styles.renameInput} value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} maxLength={60} autoFocus /><button type="button" className={styles.renameSave} onClick={renameCourse}>저장</button><button type="button" className={styles.renameCancel} onClick={() => { setNameDraft(course.name); setEditingName(false); }}>취소</button></div> : <button type="button" className={styles.titleEdit} title="이름을 변경하려면 클릭하세요" aria-label="이름을 변경하려면 클릭하세요" onClick={() => { setNameDraft(course.name); setEditingName(true); }}>{course.name}</button>}
                 <p className={styles.meta}>{courseMeta(course)}</p>
                 {course.plan && <p className={styles.meta}>{course.plan.destination.name} · {course.plan.travelDate}{course.plan.returnDate && course.plan.returnDate !== course.plan.travelDate ? ` ~ ${course.plan.returnDate}` : ''}</p>}
               </div>

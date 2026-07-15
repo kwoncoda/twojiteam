@@ -30,3 +30,8 @@ export function planToCourse(plan: TravelPlan): SavedCourse {
   }));
   return { id: plan.id, name: plan.title, initial: plan.destination.name.trim().charAt(0) || '여', spots, plan };
 }
+export function updateSavedCourseName(id: string, name: string): SavedCourse[] {
+  const next = getSavedCourses().map((course) => course.id === id ? { ...course, name, plan: course.plan ? { ...course.plan, title: name } : course.plan } : course);
+  writeLocal(KEY, next);
+  return next;
+}
