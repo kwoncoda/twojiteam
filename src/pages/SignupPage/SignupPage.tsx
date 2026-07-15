@@ -8,8 +8,6 @@ export function SignupPage() {
   const [form, setForm] = useState({ nickname: '', email: '', phone: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
-  const [pendingVerification, setPendingVerification] = useState(false);
-  const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const { signUp } = useAuth();
   const update = (key: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
@@ -22,7 +20,7 @@ export function SignupPage() {
     if (form.password.length < 8) { setError('비밀번호는 8자 이상이어야 합니다.'); return; }
     if (form.password !== form.confirm) { setError('비밀번호가 일치하지 않습니다.'); return; }
     setError(''); setBusy(true);
-    try { const result = await signUp(form.email, form.password, { display_name: form.nickname, phone: form.phone }); setPendingVerification(!result.sessionCreated); setMessage(result.sessionCreated ? '회원가입이 완료되었습니다.' : '아직 가입이 완료되지 않았습니다. 이메일의 인증 링크를 눌러 계정을 활성화해주세요.'); setDone(true); } catch (caught) { setError(caught instanceof Error ? caught.message : '회원가입에 실패했습니다.'); } finally { setBusy(false); }
+    try { await signUp(form.email, form.password, { display_name: form.nickname, phone: form.phone }); setDone(true); } catch (caught) { setError(caught instanceof Error ? caught.message : '회원가입에 실패했습니다.'); } finally { setBusy(false); }
   };
 
   if (done) {
@@ -32,10 +30,9 @@ export function SignupPage() {
           <div className={styles.doneIcon} aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20 6 9 17l-5-5" /></svg>
           </div>
-          <h1>{pendingVerification ? '이메일 인증이 필요해요' : '가입이 완료되었어요'}</h1>
-          <p className={styles.sub}>{form.nickname}님, 환영합니다. {message}</p>
-          <Link to="/login" className={`button button-primary ${styles.submit}`}>로그인하러 가기</Link>
-          <span className={styles.mockTag}>이메일 인증 후 로그인할 수 있습니다.</span>
+          <h1>가입이 완료되었어요</h1>
+          <p className={styles.sub}>{form.nickname}님, 환영합니다. 지금 바로 여행 계획을 시작할 수 있어요.</p>
+          <Link to="/" className={`button button-primary ${styles.submit}`}>여행 시작하기</Link>
         </div>
       </div>
     );
@@ -68,7 +65,6 @@ export function SignupPage() {
 
         <button type="submit" className={`button button-primary ${styles.submit}`} disabled={busy}>{busy ? '가입 중...' : '가입하기'}</button>
         <p className={styles.login}>이미 계정이 있으신가요? <Link to="/login">로그인</Link></p>
-        <span className={styles.mockTag}>Supabase 이메일 인증</span>
       </form>
     </div>
   );

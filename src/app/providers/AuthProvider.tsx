@@ -6,7 +6,7 @@ import { getSession, signIn, signOut, signUp, subscribeToAuthChanges } from '../
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, metadata: { display_name: string; phone?: string }) => Promise<{ sessionCreated: boolean }>;
+  signUp: (email: string, password: string, metadata: { display_name: string; phone?: string }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -16,7 +16,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => { let active = true; void getSession().then(({ user: currentUser }) => { if (active) setUser(currentUser); }).finally(() => { if (active) setLoading(false); }); const unsubscribe = subscribeToAuthChanges(setUser); return () => { active = false; unsubscribe(); }; }, []);
-  const value = useMemo<AuthContextValue>(() => ({ user, loading, signUp: async (email, password, metadata) => { const result = await signUp(email, password, metadata); setUser(result.session?.user ?? null); return { sessionCreated: Boolean(result.session) }; }, signIn: async (email, password) => { setUser(await signIn(email, password)); }, signOut: async () => { await signOut(); setUser(null); } }), [loading, user]);
+  const value = useMemo<AuthContextValue>(() => ({ user, loading, signUp: async (email, password, metadata) => { setUser(await signUp(email, password, metadata)); }, signIn: async (email, password) => { setUser(await signIn(email, password)); }, signOut: async () => { await signOut(); setUser(null); } }), [loading, user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

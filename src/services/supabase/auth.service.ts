@@ -6,11 +6,14 @@ function requireSupabase() {
   return supabase;
 }
 
-export async function signUp(email: string, password: string, metadata: { display_name: string; phone?: string }): Promise<{ user: User | null; session: Session | null }> {
+export async function signUp(email: string, password: string, metadata: { display_name: string; phone?: string }): Promise<User> {
   const client = requireSupabase();
-  const { data, error } = await client.auth.signUp({ email, password, options: { data: metadata, emailRedirectTo: window.location.origin } });
+  const { data, error } = await client.auth.signUp({ email, password, options: { data: metadata } });
   if (error) throw error;
-  return data;
+  if (!data.user || !data.session) {
+    throw new Error('회원가입 세션을 만들지 못했습니다. Supabase 이메일 공급자 설정에서 Confirm email을 꺼주세요.');
+  }
+  return data.user;
 }
 
 export async function signIn(email: string, password: string): Promise<User> {

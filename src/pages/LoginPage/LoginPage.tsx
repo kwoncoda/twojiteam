@@ -47,7 +47,6 @@ export function LoginPage() {
         </div>
 
         <p className={styles.signup}>아직 회원이 아니신가요? <Link to="/signup">회원가입</Link></p>
-        <span className={styles.mockTag}>Supabase 이메일 인증</span>
       </form>
     </div>
   );

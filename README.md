@@ -40,7 +40,7 @@ npm run dev
 
 `supabase/migrations/20260714000000_initial_schema.sql`은 `spots`, `travel_plans`, `travel_plan_spots`와 소유자 기준 RLS 정책을 만들고, `supabase/seed.sql`은 개발용 관광지 3곳을 넣습니다.
 
-Supabase CLI가 설치되어 있다면 프로젝트 연결 후 migration과 seed를 적용합니다. `20260714010000_clear_registered_spots.sql`은 기존 관광지 레코드를 삭제하며, 새 관광지는 Google Places에서 실시간으로 수집합니다. 인증을 연결하지 않은 현재 화면에서는 localStorage 저장을 기본으로 유지합니다. Supabase 저장을 실제 사용하려면 Anonymous Sign-In 또는 별도 인증 흐름을 먼저 켜야 합니다.
+Supabase CLI가 설치되어 있다면 프로젝트 연결 후 migration과 seed를 적용합니다. `20260714010000_clear_registered_spots.sql`은 기존 관광지 레코드를 삭제하며, 새 관광지는 Google Places에서 실시간으로 수집합니다. 회원가입과 로그인은 Supabase Email/Password Auth를 사용합니다. 별도 이메일 확인 없이 가입 직후 세션을 발급하려면 Supabase Dashboard의 Authentication > Providers > Email에서 `Confirm email`을 꺼야 합니다. `VITE_DATA_MODE=mock`인 동안 여행 계획 저장은 localStorage를 사용합니다.
 
 ## 폴더 안내
 
