@@ -8,7 +8,7 @@ const heartFill = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-
 
 const estMinutes = (km: number) => Math.max(5, Math.round((km / 50) * 60)); // 약 50km/h 가정 미리보기
 
-export function RecommendationCard({ spot, selected, liked = false, onSelect, onReject, onToggleLike }: { spot: ScoredSpot; selected: boolean; liked?: boolean; onSelect: () => void; onReject: () => void; onToggleLike?: () => void }) {
+export function RecommendationCard({ spot, selected, liked = false, onSelect, onToggleLike }: { spot: ScoredSpot; selected: boolean; liked?: boolean; onSelect: () => void; onToggleLike?: () => void }) {
   const hasDistance = spot.distanceKm !== undefined;
   return (
     <article className={`${styles.card} ${selected ? styles.selected : ''}`}>
