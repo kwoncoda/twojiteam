@@ -8,6 +8,7 @@
 .field { display: block; text-align: left; font-size: .85rem; font-weight: 700; color: var(--muted); margin-bottom: .85rem; }
 .field input { display: block; width: 100%; min-height: 50px; margin-top: .35rem; padding: .7rem 1rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; color: var(--ink); font: inherit; }
 .field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(59, 130, 246, .15); }
+.error { margin: 0 0 .85rem; padding: .7rem 1rem; border: 1px solid #f3b4b4; border-radius: var(--radius-md); background: #fff1f1; color: #9b1c1c; font-size: .85rem; text-align: left; }
 .submit { width: 100%; border-radius: 999px; min-height: 52px; margin-top: .5rem; }
 .divider { display: flex; align-items: center; gap: .75rem; color: var(--muted); font-size: .85rem; margin: 1.75rem 0 1.25rem; }
 .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }

@@ -1,24 +1,28 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../app/providers/AuthProvider';
 import styles from './SignupPage.module.css';
 
 export function SignupPage() {
   const [form, setForm] = useState({ nickname: '', email: '', phone: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const { signUp } = useAuth();
   const update = (key: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!form.nickname.trim()) { setError('닉네임을 입력해주세요.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError('올바른 이메일 형식을 입력해주세요.'); return; }
     if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(form.phone.replace(/\s/g, ''))) { setError('올바른 전화번호를 입력해주세요. (예: 010-1234-5678)'); return; }
     if (form.password.length < 8) { setError('비밀번호는 8자 이상이어야 합니다.'); return; }
     if (form.password !== form.confirm) { setError('비밀번호가 일치하지 않습니다.'); return; }
-    setError('');
-    // mock: 실제 가입 없이 성공 처리 (백엔드 연동 시 auth.service.signUp으로 교체)
-    setDone(true);
+    setError(''); setBusy(true);
+    try { const result = await signUp(form.email, form.password, { display_name: form.nickname, phone: form.phone }); setPendingVerification(!result.sessionCreated); setMessage(result.sessionCreated ? '회원가입이 완료되었습니다.' : '아직 가입이 완료되지 않았습니다. 이메일의 인증 링크를 눌러 계정을 활성화해주세요.'); setDone(true); } catch (caught) { setError(caught instanceof Error ? caught.message : '회원가입에 실패했습니다.'); } finally { setBusy(false); }
   };
 
   if (done) {
@@ -28,10 +32,10 @@ export function SignupPage() {
           <div className={styles.doneIcon} aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20 6 9 17l-5-5" /></svg>
           </div>
-          <h1>가입이 완료되었어요</h1>
-          <p className={styles.sub}>{form.nickname}님, 환영합니다. 이제 로그인하고 여행을 시작해보세요.</p>
+          <h1>{pendingVerification ? '이메일 인증이 필요해요' : '가입이 완료되었어요'}</h1>
+          <p className={styles.sub}>{form.nickname}님, 환영합니다. {message}</p>
           <Link to="/login" className={`button button-primary ${styles.submit}`}>로그인하러 가기</Link>
-          <span className={styles.mockTag}>테스트용 목업 · 실제 가입 없음</span>
+          <span className={styles.mockTag}>이메일 인증 후 로그인할 수 있습니다.</span>
         </div>
       </div>
     );
@@ -62,9 +66,9 @@ export function SignupPage() {
 
         {error && <p className={styles.error} role="alert">{error}</p>}
 
-        <button type="submit" className={`button button-primary ${styles.submit}`}>가입하기</button>
+        <button type="submit" className={`button button-primary ${styles.submit}`} disabled={busy}>{busy ? '가입 중...' : '가입하기'}</button>
         <p className={styles.login}>이미 계정이 있으신가요? <Link to="/login">로그인</Link></p>
-        <span className={styles.mockTag}>테스트용 목업 · 백엔드 연동 전</span>
+        <span className={styles.mockTag}>Supabase 이메일 인증</span>
       </form>
     </div>
   );
