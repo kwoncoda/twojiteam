@@ -37,9 +37,9 @@ export function MyPage() {
         <div className={styles.profile}>
           <div className={styles.avatar} aria-hidden="true">여</div>
           <div className={styles.info}>
-            <div className={styles.name}>{user?.user_metadata?.display_name ?? '여행자님'}</div>
+            <div className={styles.name}>{user?.displayName ?? '여행자님'}</div>
             <div className={styles.id}>{user?.email}</div>
-            <div className={styles.phone}>{user?.user_metadata?.phone ?? ''}</div>
+            <div className={styles.phone}>{user?.phone ?? ''}</div>
           </div>
           <button type="button" className={`button button-secondary ${styles.logout}`} onClick={onLogout}>로그아웃</button>
         </div>

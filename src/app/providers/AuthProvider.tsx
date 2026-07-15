@@ -1,23 +1,33 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '@supabase/supabase-js';
-import { getSession, signIn, signOut, signUp, subscribeToAuthChanges } from '../../services/supabase/auth.service';
+import { getSession, signIn, signOut, signUp } from '../../services/supabase/auth.service';
+import type { MvpUser } from '../../services/supabase/auth.service';
 
 interface AuthContextValue {
-  user: User | null;
+  user: MvpUser | null;
   loading: boolean;
   signUp: (email: string, password: string, metadata: { display_name: string; phone?: string }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => { let active = true; void getSession().then(({ user: currentUser }) => { if (active) setUser(currentUser); }).finally(() => { if (active) setLoading(false); }); const unsubscribe = subscribeToAuthChanges(setUser); return () => { active = false; unsubscribe(); }; }, []);
-  const value = useMemo<AuthContextValue>(() => ({ user, loading, signUp: async (email, password, metadata) => { setUser(await signUp(email, password, metadata)); }, signIn: async (email, password) => { setUser(await signIn(email, password)); }, signOut: async () => { await signOut(); setUser(null); } }), [loading, user]);
+  const [user, setUser] = useState<MvpUser | null>(() => getSession().user);
+  const value = useMemo<AuthContextValue>(() => ({
+    user,
+    loading: false,
+    signUp: async (email, password, metadata) => { setUser(await signUp(email, password, metadata)); },
+    signIn: async (email, password) => { setUser(await signIn(email, password)); },
+    signOut: async () => { await signOut(); setUser(null); },
+  }), [user]);
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() { const value = useContext(AuthContext); if (!value) throw new Error('AuthProvider가 필요합니다.'); return value; }
+export function useAuth() {
+  const value = useContext(AuthContext);
+  if (!value) throw new Error('AuthProvider가 필요합니다.');
+  return value;
+}

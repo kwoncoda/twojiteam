@@ -43,7 +43,7 @@ export function SignupPage() {
       <form className={styles.card} onSubmit={submit}>
         <img src="/logo.png" alt="TRAVEL PICK" className={styles.logoImg} />
         <h1>회원가입</h1>
-        <p className={styles.sub}>TRAVEL PICK 계정을 만들어보세요</p>
+        <p className={styles.sub}>이메일과 전화번호는 확인 절차 없이 계정 정보로만 저장됩니다.</p>
 
         <label className={styles.field} htmlFor="signup-nickname">닉네임
           <input id="signup-nickname" type="text" value={form.nickname} onChange={update('nickname')} placeholder="여행자" autoComplete="nickname" />

@@ -1,43 +1,81 @@
-import type { Session, User } from '@supabase/supabase-js';
+import { readLocal, removeLocal, writeLocal } from '../storage/localStorage.service';
 import { supabase } from './supabase.client';
+
+const SESSION_KEY = 'mvp-user';
+
+export interface MvpUser {
+  id: string;
+  email: string;
+  displayName: string;
+  phone: string | null;
+  createdAt: string;
+}
+
+interface MvpUserRow {
+  id: string;
+  email: string;
+  display_name: string;
+  phone: string | null;
+  created_at: string;
+}
 
 function requireSupabase() {
   if (!supabase) throw new Error('Supabase 환경변수가 설정되지 않았습니다. .env.local을 확인하세요.');
   return supabase;
 }
 
-export async function signUp(email: string, password: string, metadata: { display_name: string; phone?: string }): Promise<User> {
-  const client = requireSupabase();
-  const { data, error } = await client.auth.signUp({ email, password, options: { data: metadata } });
-  if (error) throw error;
-  if (!data.user || !data.session) {
-    throw new Error('회원가입 세션을 만들지 못했습니다. Supabase 이메일 공급자 설정에서 Confirm email을 꺼주세요.');
+function toUser(row: MvpUserRow | null | undefined): MvpUser {
+  if (!row?.id || !row.email || !row.display_name) {
+    throw new Error('사용자 정보를 불러오지 못했습니다.');
   }
-  return data.user;
+
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    phone: row.phone,
+    createdAt: row.created_at,
+  };
 }
 
-export async function signIn(email: string, password: string): Promise<User> {
+function saveSession(user: MvpUser): MvpUser {
+  writeLocal(SESSION_KEY, user);
+  return user;
+}
+
+export async function signUp(email: string, password: string, metadata: { display_name: string; phone?: string }): Promise<MvpUser> {
   const client = requireSupabase();
-  const { data, error } = await client.auth.signInWithPassword({ email, password });
-  if (error || !data.user) throw error ?? new Error('로그인에 실패했습니다.');
-  return data.user;
+  const { data, error } = await client.rpc('register_mvp_user', {
+    p_email: email.trim().toLowerCase(),
+    p_password: password,
+    p_display_name: metadata.display_name.trim(),
+    p_phone: metadata.phone?.trim() || null,
+  });
+
+  if (error) throw new Error(error.message);
+  return saveSession(toUser(Array.isArray(data) ? data[0] as MvpUserRow | undefined : data as MvpUserRow | null));
+}
+
+export async function signIn(email: string, password: string): Promise<MvpUser> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('login_mvp_user', {
+    p_email: email.trim().toLowerCase(),
+    p_password: password,
+  });
+
+  if (error) throw new Error(error.message);
+  return saveSession(toUser(Array.isArray(data) ? data[0] as MvpUserRow | undefined : data as MvpUserRow | null));
 }
 
 export async function signOut(): Promise<void> {
-  const client = requireSupabase();
-  const { error } = await client.auth.signOut();
-  if (error) throw error;
+  removeLocal(SESSION_KEY);
 }
 
-export async function getSession(): Promise<{ user: User | null; session: Session | null }> {
-  if (!supabase) return { user: null, session: null };
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  return { user: data.session?.user ?? null, session: data.session };
-}
-
-export function subscribeToAuthChanges(onChange: (user: User | null) => void): () => void {
-  if (!supabase) return () => undefined;
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => onChange(session?.user ?? null));
-  return () => data.subscription.unsubscribe();
+export function getSession(): { user: MvpUser | null } {
+  const user = readLocal<MvpUser | null>(SESSION_KEY, null);
+  if (!user?.id || !user.email || !user.displayName) {
+    removeLocal(SESSION_KEY);
+    return { user: null };
+  }
+  return { user };
 }
