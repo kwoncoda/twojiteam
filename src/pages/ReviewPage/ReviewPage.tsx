@@ -16,8 +16,8 @@ import { loadGoogleMaps } from '../../features/map/googleMaps.loader';
 import styles from './ReviewPage.module.css';
 
 export function ReviewPage() {
-  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState('');
-  useEffect(() => { if (!plan) navigate('/'); }, [navigate, plan]);
+  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [saving, setSaving] = useState(false); const [saveComplete, setSaveComplete] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null);
+  useEffect(() => { if (!plan || !plan.spots.length) navigate('/'); }, [navigate, plan]);
   const routeKey = plan?.spots.slice(0, -1).map((item, index) => `${item.spot.id}:${plan.spots[index + 1].spot.id}:${plan.spots[index + 1].transportMode ?? 'DRIVING'}`).join('|') ?? '';
   useEffect(() => {
     if (!plan || plan.spots.length < 2) return;
@@ -46,9 +46,16 @@ export function ReviewPage() {
     return next?.index === index + 1 ? [{ origin: item.spot, destination: next.item.spot, mode: next.item.transportMode ?? 'DRIVING' as TransportMode, departureTime: schedule[index]?.departure }] : [];
   });
   if (!plan) return null;
-  const selectedDayPlan = { ...plan, spots: visibleSpots.map(({ item }) => item), routes: visibleRoutes.map((_, index) => plan.routes[visibleSpots[index].index]) };
-  const { visitMinutes, travelMinutes, estimatedCost: cost, currency } = getItineraryTotals(selectedDayPlan);
-  const savePlan = async () => { await save(); addSavedCourse(planToCourse(plan)); setSaved(true); };
+  const { visitMinutes, travelMinutes, estimatedCost: cost } = getItineraryTotals(plan);
+  const savePlan = async () => {
+    if (saving) return;
+    await save();
+    addSavedCourse(planToCourse(plan));
+    setSaved(true);
+    setSaving(true);
+    window.setTimeout(() => setSaveComplete(true), 1050);
+    window.setTimeout(() => navigate('/mypage'), 2450);
+  };
   return (
     <>
       <Header />
@@ -101,22 +108,20 @@ export function ReviewPage() {
             </ol>
             <div className={styles.actions}>
               <Button variant="secondary" type="button" onClick={() => navigate('/recommendations')}>계획 수정</Button>
-              <Button type="button" onClick={savePlan}>저장</Button>
+              <Button type="button" onClick={() => void savePlan()} disabled={saving}>{saving ? '저장 중...' : '저장'}</Button>
               <Button variant="secondary" type="button" onClick={() => { setPlan(null); navigate('/'); }}>새 여행 계획</Button>
             </div>
             {saved && <p className={styles.saved} role="status">여행 계획을 저장했어요. <Link to="/mypage">마이페이지에서 보기</Link></p>}
           </section>
         </div>
       </PageContainer>
+      {saving && <div className={styles.saveOverlay} role="status" aria-live="polite">
+        <div className={`${styles.saveOrb} ${saveComplete ? styles.saveOrbComplete : ''}`}>
+          <div className={styles.saveOrbCore}>{saveComplete ? '✓' : '✦'}</div>
+        </div>
+        <strong>{saveComplete ? '저장 완료!' : '여행 코스 저장 중...'}</strong>
+        <span>{saveComplete ? '마이페이지로 이동할게요' : '잠깐만 기다려주세요'}</span>
+      </div>}
     </>
   );
 }
-
-
-
-
-
-
-
-
-
