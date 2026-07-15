@@ -16,7 +16,7 @@ import { loadGoogleMaps } from '../../features/map/googleMaps.loader';
 import styles from './ReviewPage.module.css';
 
 export function ReviewPage() {
-  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [saving, setSaving] = useState(false); const [saveComplete, setSaveComplete] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState('');
+  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [saving, setSaving] = useState(false); const [saveComplete, setSaveComplete] = useState(false); const [saveError, setSaveError] = useState(''); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState('');
   useEffect(() => { if (!plan || !plan.spots.length) navigate('/'); }, [navigate, plan]);
   const routeKey = plan?.spots.slice(0, -1).map((item, index) => `${item.spot.id}:${plan.spots[index + 1].spot.id}:${plan.spots[index + 1].transportMode ?? 'DRIVING'}`).join('|') ?? '';
   useEffect(() => {
@@ -50,12 +50,19 @@ export function ReviewPage() {
   const { visitMinutes, travelMinutes, estimatedCost: cost, currency } = getItineraryTotals(selectedDayPlan);
   const savePlan = async () => {
     if (saving) return;
-    await save();
-    addSavedCourse(planToCourse(plan));
-    setSaved(true);
     setSaving(true);
-    window.setTimeout(() => setSaveComplete(true), 1050);
-    window.setTimeout(() => navigate('/mypage'), 2450);
+    setSaveComplete(false);
+    setSaveError('');
+    try {
+      await save();
+      addSavedCourse(planToCourse(plan));
+      setSaved(true);
+      window.setTimeout(() => setSaveComplete(true), 1050);
+      window.setTimeout(() => navigate('/mypage'), 2450);
+    } catch (reason: unknown) {
+      setSaving(false);
+      setSaveError(reason instanceof Error ? reason.message : '여행 계획을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
   };
   return (
     <>
@@ -112,6 +119,7 @@ export function ReviewPage() {
               <Button type="button" onClick={() => void savePlan()} disabled={saving}>{saving ? '저장 중...' : '저장'}</Button>
               <Button variant="secondary" type="button" onClick={() => { setPlan(null); navigate('/'); }}>새 여행 계획</Button>
             </div>
+            {saveError && <div className={styles.warnings} role="alert"><strong>저장하지 못했습니다</strong><p>{saveError}</p></div>}
             {saved && <p className={styles.saved} role="status">여행 계획을 저장했어요. <Link to="/mypage">마이페이지에서 보기</Link></p>}
           </section>
         </div>
