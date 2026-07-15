@@ -25,7 +25,8 @@ export function planToCourse(plan: TravelPlan): SavedCourse {
     durationMinutes: item.spot.durationMinutes,
     fee: item.spot.feeAmount ? `${item.spot.feeAmount.toLocaleString()}원` : (item.spot.feeNote || '현장 확인'),
     hours: item.spot.openingHours?.note ?? '방문 전 확인',
-    address: item.spot.region
+    address: item.spot.address ?? item.spot.region,
+    photoUrl: item.spot.photoUrl
   }));
-  return { id: plan.id, name: plan.title, initial: plan.destination.name.trim().charAt(0) || '여', spots };
+  return { id: plan.id, name: plan.title, initial: plan.destination.name.trim().charAt(0) || '여', spots, plan };
 }
