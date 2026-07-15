@@ -17,7 +17,7 @@ import styles from './ReviewPage.module.css';
 
 export function ReviewPage() {
   const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState('');
-  useEffect(() => { if (!plan || !plan.spots.length) navigate('/'); }, [navigate, plan]);
+  useEffect(() => { if (!plan) navigate('/'); }, [navigate, plan]);
   const routeKey = plan?.spots.slice(0, -1).map((item, index) => `${item.spot.id}:${plan.spots[index + 1].spot.id}:${plan.spots[index + 1].transportMode ?? 'DRIVING'}`).join('|') ?? '';
   useEffect(() => {
     if (!plan || plan.spots.length < 2) return;
@@ -41,9 +41,13 @@ export function ReviewPage() {
   const planningDates = useMemo(() => { if (!plan) return []; const start = new Date(`${plan.travelDate}T00:00:00`); const end = new Date(`${plan.returnDate ?? plan.travelDate}T00:00:00`); const dates: string[] = []; for (const cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) dates.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`); return dates; }, [plan]);
   const activeDate = planningDates.includes(selectedDate) ? selectedDate : planningDates[0];
   const visibleSpots = plan ? plan.spots.map((item, index) => ({ item, index })).filter(({ item }) => (item.travelDate ?? plan.travelDate) === activeDate) : [];
-  const visibleRoutes = visibleSpots.slice(0, -1).filter(({ item, index }) => (item.travelDate ?? plan!.travelDate) === (plan!.spots[index + 1].travelDate ?? plan!.travelDate)).map(({ item, index }) => ({ origin: item.spot, destination: plan!.spots[index + 1].spot, mode: plan!.spots[index + 1].transportMode ?? 'DRIVING' as TransportMode, departureTime: schedule[index]?.departure }));
+  const visibleRoutes = visibleSpots.slice(0, -1).flatMap(({ item, index }, visibleIndex) => {
+    const next = visibleSpots[visibleIndex + 1];
+    return next?.index === index + 1 ? [{ origin: item.spot, destination: next.item.spot, mode: next.item.transportMode ?? 'DRIVING' as TransportMode, departureTime: schedule[index]?.departure }] : [];
+  });
   if (!plan) return null;
-  const { visitMinutes, travelMinutes, estimatedCost: cost, currency } = getItineraryTotals(plan);
+  const selectedDayPlan = { ...plan, spots: visibleSpots.map(({ item }) => item), routes: visibleRoutes.map((_, index) => plan.routes[visibleSpots[index].index]) };
+  const { visitMinutes, travelMinutes, estimatedCost: cost, currency } = getItineraryTotals(selectedDayPlan);
   const savePlan = async () => { await save(); addSavedCourse(planToCourse(plan)); setSaved(true); };
   return (
     <>
@@ -59,15 +63,15 @@ export function ReviewPage() {
             <p className="hint">장소를 삭제하거나 순서를 바꾸고, 구간별 이동수단을 조정할 수 있습니다.</p>
             <label className={styles.daySelect}>일정 날짜<select value={activeDate} onChange={(event) => setSelectedDate(event.target.value)}>{planningDates.map((date) => <option key={date} value={date}>{date}</option>)}</select></label>
             <div className={styles.summary}>
-              <strong>{plan.spots.length}곳 · 총 {Math.floor((visitMinutes + travelMinutes) / 60)}시간 {(visitMinutes + travelMinutes) % 60}분</strong>
+              <strong>{visibleSpots.length}곳 · 총 {Math.floor((visitMinutes + travelMinutes) / 60)}시간 {(visitMinutes + travelMinutes) % 60}분</strong>
               <span>체류 {visitMinutes}분 · 이동 {travelMinutes}분 · 예상 비용 {formatRouteCost(cost, currency)}</span>
             </div>
             {warnings.length > 0 && <div className={styles.warnings} role="status"><strong>일정 확인이 필요합니다</strong>{warnings.map((warning) => <p key={`${warning.spotId}-${warning.kind}`}>{warning.message}</p>)}</div>}
             <ol className={styles.timeline}>
-              {visibleSpots.map(({ item, index }) => {
+              {visibleSpots.map(({ item, index }, visibleIndex) => {
                 const itemSchedule = schedule[index];
                 const route = plan.routes[index];
-                const mode = item.transportMode ?? 'DRIVING';
+                const mode = plan.spots[index + 1]?.transportMode ?? 'DRIVING';
                 return (
                   <li key={item.spot.id} draggable onDragStart={() => setDraggedId(item.spot.id)} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (draggedId) reorderSpot(draggedId, index); setDraggedId(null); }} onDragEnd={() => setDraggedId(null)} aria-grabbed={draggedId === item.spot.id}>
                       <div className={styles.ticket}>
@@ -83,7 +87,7 @@ export function ReviewPage() {
                         </div>
                       </div>
                     </div>
-                    {index < plan.spots.length - 1 && (
+                    {visibleIndex < visibleSpots.length - 1 && visibleSpots[visibleIndex + 1].index === index + 1 && (
                       <div className={styles.leg}>
                         <label className={styles.transport}>이동
                           <select value={mode} onChange={(event) => { const nextMode = event.target.value as TransportMode; setTransport(index, nextMode); setRoute(index, null); }}>{Object.entries(transportLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
@@ -107,8 +111,6 @@ export function ReviewPage() {
     </>
   );
 }
-
-
 
 
 

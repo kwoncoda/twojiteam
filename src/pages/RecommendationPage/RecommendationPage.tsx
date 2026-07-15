@@ -42,7 +42,7 @@ export function RecommendationPage() {
   const departureTime = plan && legIndex >= 0 ? buildSchedule(plan)[legIndex]?.departure : undefined;
   const recommendationTime = plan && lastDayIndex >= 0 ? buildSchedule(plan)[lastDayIndex]?.departure.toTimeString().slice(0, 5) : plan?.dayStartTimes?.[selectedDate] ?? plan?.startTime;
   const dayNumber = Math.max(1, planningDates.indexOf(selectedDate) + 1);
-  useEffect(() => { if (!plan) { navigate('/'); return; } if (awaitingTransport || !plan.dayStartTimes?.[selectedDate]) return; let active = true; setLoading(true); setError(''); void getSpots(plan.destination).then(async (spots) => { const response = await requestOpenAIRecommendations({ destination: plan.destination, preferences: plan.preferences, spots, selectedIds: plan.spots.map((item) => item.spot.id), rejectedIds: rejected, previousSpotId: lastDaySpot?.spot.id, recommendationTime }); if (active) setCandidates(openAIRecommendationsToSpots(response, spots)); }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : 'OpenAI 추천에 실패했습니다.'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [navigate, plan, awaitingTransport, rejected, selectedDate, lastDaySpot?.spot.id, recommendationTime]);
+  useEffect(() => { if (!plan) { navigate('/'); return; } if (awaitingTransport || !plan.dayStartTimes?.[selectedDate]) return; let active = true; setLoading(true); setError(''); void getSpots(plan.destination).then(async (spots) => { const response = await requestOpenAIRecommendations({ destination: plan.destination, preferences: plan.preferences, spots, selectedIds: plan.spots.map((item) => item.spot.id), rejectedIds: rejected, previousSpotId: lastDaySpot?.spot.id, previousVenueType: lastDaySpot?.spot.venueType, recommendationTime }); if (active) setCandidates(openAIRecommendationsToSpots(response, spots)); }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : 'OpenAI 추천에 실패했습니다.'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [navigate, plan, awaitingTransport, rejected, selectedDate, lastDaySpot?.spot.id, lastDaySpot?.spot.venueType, recommendationTime]);
   useEffect(() => {
     if (!plan || !origin || !destination) return;
     let active = true;
@@ -123,7 +123,6 @@ export function RecommendationPage() {
     </>
   );
 }
-
 
 
 

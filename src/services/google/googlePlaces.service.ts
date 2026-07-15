@@ -11,6 +11,12 @@ function categoryFor(placeTypes: string[] = []): Spot['category'] {
   if (placeTypes.some((type) => ['amusement_park', 'zoo', 'aquarium'].includes(type))) return 'activity';
   return 'nature';
 }
+function venueTypeFor(placeTypes: string[] = []): Spot['venueType'] {
+  if (placeTypes.includes('restaurant')) return 'restaurant';
+  if (placeTypes.includes('cafe')) return 'cafe';
+  if (placeTypes.includes('bakery')) return 'bakery';
+  return undefined;
+}
 function priceFor(place: google.maps.places.PlaceData): { amount: number; currency?: string; note: string } {
   const start = place.priceRange?.startPrice;
   if (!start?.currencyCode || start.units === undefined) return { amount: 0, note: '가격 정보 없음 · 현장 확인 필요' };
@@ -25,6 +31,6 @@ export async function searchTouristSpots(destination: Destination, radius = 1000
   return places.flatMap((place): Spot[] => {
     if (!place.id || !place.displayName || !place.location) return [];
     const category = categoryFor(place.types); const fee = priceFor(place);
-    return [{ id: `place:${place.id}`, name: place.displayName, address: place.formattedAddress ?? destination.name, region: place.formattedAddress ?? destination.name, latitude: place.location.lat(), longitude: place.location.lng(), category, tags: [category, 'balanced'], description: `${destination.name}에서 찾은 Google Places 관광지`, photoUrl: place.photos?.[0]?.getURI({ maxWidth: 800, maxHeight: 500 }), feeAmount: fee.amount, feeCurrency: fee.currency, feeNote: fee.note, durationMinutes: 90, openingHours: { weekly: {} }, popularity: Math.min(1, (place.rating ?? 0) / 5), source: 'places', sourceUrl: place.googleMapsURI, lastVerifiedAt: new Date().toISOString() }];
+    return [{ id: `place:${place.id}`, name: place.displayName, address: place.formattedAddress ?? destination.name, region: place.formattedAddress ?? destination.name, latitude: place.location.lat(), longitude: place.location.lng(), category, venueType: venueTypeFor(place.types), tags: [category, 'balanced'], description: `${destination.name}에서 찾은 Google Places 관광지`, photoUrl: place.photos?.[0]?.getURI({ maxWidth: 800, maxHeight: 500 }), feeAmount: fee.amount, feeCurrency: fee.currency, feeNote: fee.note, durationMinutes: 90, openingHours: { weekly: {} }, popularity: Math.min(1, (place.rating ?? 0) / 5), source: 'places', sourceUrl: place.googleMapsURI, lastVerifiedAt: new Date().toISOString() }];
   }).map((spot) => ({ ...spot, durationMinutes: durationById.get(spot.id) ?? 90 }));
 }
