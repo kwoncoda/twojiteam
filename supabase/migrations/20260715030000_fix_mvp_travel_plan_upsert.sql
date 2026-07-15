@@ -1,25 +1,6 @@
--- Hackathon MVP travel-plan storage for the custom public.mvp_users login.
--- The browser session is intentionally localStorage-based, so p_owner_id is
--- an ownership label rather than a server-verifiable authentication claim.
-
-create table if not exists public.mvp_travel_plans (
-  id uuid primary key,
-  owner_id uuid not null references public.mvp_users(id) on delete cascade,
-  title text not null,
-  destination_name text not null,
-  travel_date date not null,
-  return_date date,
-  status text not null default 'draft' check (status in ('draft', 'complete')),
-  plan_data jsonb not null check (jsonb_typeof(plan_data) = 'object'),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists mvp_travel_plans_owner_updated_idx
-  on public.mvp_travel_plans (owner_id, updated_at desc);
-
-alter table public.mvp_travel_plans enable row level security;
-revoke all on table public.mvp_travel_plans from public, anon, authenticated;
+-- Fix save_mvp_travel_plan after the initial migration has already been applied.
+-- In a RETURNS TABLE plpgsql function, `id` is also an output variable, so
+-- ON CONFLICT (id) is ambiguous. Target the primary-key constraint by name.
 
 create or replace function public.save_mvp_travel_plan(
   p_owner_id uuid,
@@ -118,49 +99,7 @@ begin
 end;
 $$;
 
-create or replace function public.get_mvp_travel_plan(
-  p_owner_id uuid,
-  p_plan_id uuid
-)
-returns table (plan_data jsonb)
-language sql
-security definer
-set search_path = public, extensions
-as $$
-  select stored_plan.plan_data
-    from public.mvp_travel_plans as stored_plan
-   where stored_plan.owner_id = p_owner_id
-     and stored_plan.id = p_plan_id
-   limit 1;
-$$;
-
-create or replace function public.delete_mvp_travel_plan(
-  p_owner_id uuid,
-  p_plan_id uuid
-)
-returns boolean
-language plpgsql
-security definer
-set search_path = public, extensions
-as $$
-declare
-  deleted_count integer;
-begin
-  delete from public.mvp_travel_plans as stored_plan
-   where stored_plan.owner_id = p_owner_id
-     and stored_plan.id = p_plan_id;
-
-  get diagnostics deleted_count = row_count;
-  return deleted_count > 0;
-end;
-$$;
-
 revoke all on function public.save_mvp_travel_plan(uuid, jsonb) from public;
-revoke all on function public.get_mvp_travel_plan(uuid, uuid) from public;
-revoke all on function public.delete_mvp_travel_plan(uuid, uuid) from public;
-
 grant execute on function public.save_mvp_travel_plan(uuid, jsonb) to anon, authenticated, service_role;
-grant execute on function public.get_mvp_travel_plan(uuid, uuid) to anon, authenticated, service_role;
-grant execute on function public.delete_mvp_travel_plan(uuid, uuid) to anon, authenticated, service_role;
 
 notify pgrst, 'reload schema';

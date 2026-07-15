@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TravelPlan } from '../../types/travelPlan';
+import initialTravelPlanMigration from '../../../supabase/migrations/20260715020000_mvp_travel_plans.sql?raw';
+import upsertFixMigration from '../../../supabase/migrations/20260715030000_fix_mvp_travel_plan_upsert.sql?raw';
 
 const user = {
   id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -102,5 +104,16 @@ describe('Supabase MVP travel-plan repository', () => {
       p_owner_id: user.id,
       p_plan_id: plan.id,
     });
+  });
+});
+
+describe('Supabase MVP travel-plan migrations', () => {
+  it.each([
+    ['initial migration', initialTravelPlanMigration],
+    ['already-installed database fix', upsertFixMigration],
+  ])('%s targets the primary-key constraint without an ambiguous id reference', (_, migrationSql) => {
+    const executableSql = migrationSql.replace(/--.*$/gm, '');
+    expect(executableSql).toContain('on conflict on constraint mvp_travel_plans_pkey');
+    expect(executableSql).not.toMatch(/on conflict\s*\(\s*id\s*\)/i);
   });
 });
