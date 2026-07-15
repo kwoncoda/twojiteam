@@ -24,7 +24,7 @@ const transportIcon = (mode: TransportMode, details?: string) => {
 };
 
 export function ReviewPage() {
-  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState(''); const [undoPlan, setUndoPlan] = useState<TravelPlan | null>(null); const [saveDialogOpen, setSaveDialogOpen] = useState(false); const [courseTitleDraft, setCourseTitleDraft] = useState('');
+  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [saving, setSaving] = useState(false); const [saveComplete, setSaveComplete] = useState(false); const [saveError, setSaveError] = useState(''); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState(''); const [undoPlan, setUndoPlan] = useState<TravelPlan | null>(null); const [saveDialogOpen, setSaveDialogOpen] = useState(false); const [courseTitleDraft, setCourseTitleDraft] = useState('');
   useEffect(() => { if (!plan) navigate('/'); }, [navigate, plan]);
   useEffect(() => { if (!undoPlan) return; const timeout = window.setTimeout(() => setUndoPlan(null), 5000); return () => window.clearTimeout(timeout); }, [undoPlan]);
   const routeKey = plan?.spots.slice(0, -1).map((item, index) => `${item.spot.id}:${plan.spots[index + 1].spot.id}:${plan.spots[index + 1].transportMode ?? 'DRIVING'}`).join('|') ?? '';
@@ -59,8 +59,27 @@ export function ReviewPage() {
   const { visitMinutes, travelMinutes, estimatedCost: cost, currency } = getItineraryTotals(selectedDayPlan);
   const deleteSpot = (id: string) => { if (!plan) return; setUndoPlan(plan); setSaved(false); removeSpot(id); };
   const restoreDeletedSpot = () => { if (!undoPlan) return; setPlan(undoPlan); setUndoPlan(null); };
-  const openSaveDialog = () => { setCourseTitleDraft(plan.title); setSaveDialogOpen(true); };
-  const savePlan = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const namedPlan = { ...plan, title: courseTitleDraft.trim() || plan.title }; setPlan(namedPlan); await save(namedPlan); addSavedCourse(planToCourse(namedPlan)); setSaveDialogOpen(false); setSaved(true); };
+  const openSaveDialog = () => { setCourseTitleDraft(plan.title); setSaveError(''); setSaveDialogOpen(true); };
+  const savePlan = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (saving) return;
+    const namedPlan = { ...plan, title: courseTitleDraft.trim() || plan.title };
+    setSaving(true);
+    setSaveComplete(false);
+    setSaveError('');
+    try {
+      await save(namedPlan);
+      setPlan(namedPlan);
+      addSavedCourse(planToCourse(namedPlan));
+      setSaveDialogOpen(false);
+      setSaved(true);
+      window.setTimeout(() => setSaveComplete(true), 1050);
+      window.setTimeout(() => navigate('/mypage'), 2450);
+    } catch (reason: unknown) {
+      setSaving(false);
+      setSaveError(reason instanceof Error ? reason.message : '여행 계획을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+  };
   return (
     <>
       <Header />
@@ -118,10 +137,9 @@ export function ReviewPage() {
               <Button type="button" onClick={openSaveDialog}>저장</Button>
               <Button variant="secondary" type="button" onClick={() => { setPlan(null); navigate('/'); }}>새 여행 계획</Button>
             </div>
-            {saveError && <div className={styles.warnings} role="alert"><strong>저장하지 못했습니다</strong><p>{saveError}</p></div>}
             {saved && <p className={styles.saved} role="status">여행 계획을 저장했어요. <Link to="/mypage">마이페이지에서 보기</Link></p>}
             {undoPlan && <div className={styles.undoMessage} role="status" aria-live="polite">관광지를 삭제했어요. <button type="button" onClick={restoreDeletedSpot}>복구</button></div>}
-            {saveDialogOpen && <div className={styles.modalBackdrop} role="presentation"><form className={styles.saveDialog} role="dialog" aria-modal="true" aria-labelledby="save-dialog-title" onSubmit={savePlan}><h3 id="save-dialog-title">여행 계획 저장</h3><label htmlFor="course-title">계획 이름</label><input id="course-title" value={courseTitleDraft} onChange={(event) => setCourseTitleDraft(event.target.value)} autoFocus maxLength={60} /><div className={styles.dialogActions}><Button variant="secondary" type="button" onClick={() => setSaveDialogOpen(false)}>취소</Button><Button type="submit">저장</Button></div></form></div>}
+            {saveDialogOpen && <div className={styles.modalBackdrop} role="presentation"><form className={styles.saveDialog} role="dialog" aria-modal="true" aria-labelledby="save-dialog-title" onSubmit={savePlan}><h3 id="save-dialog-title">여행 계획 저장</h3><label htmlFor="course-title">계획 이름</label><input id="course-title" value={courseTitleDraft} onChange={(event) => setCourseTitleDraft(event.target.value)} autoFocus maxLength={60} />{saveError && <div className={styles.warnings} role="alert"><strong>저장하지 못했습니다</strong><p>{saveError}</p></div>}<div className={styles.dialogActions}><Button variant="secondary" type="button" onClick={() => setSaveDialogOpen(false)} disabled={saving}>취소</Button><Button type="submit" disabled={saving}>{saving ? '저장 중...' : '저장'}</Button></div></form></div>}
           </section>
         </div>
       </PageContainer>
