@@ -23,8 +23,8 @@ export function scoreSpot(spot: Spot, context: RecommendationContext): ScoredSpo
   return { ...spot, score, reason, distanceKm: km };
 }
 
-export function getRecommendations(spots: Spot[], context: RecommendationContext, limit = 3): ScoredSpot[] {
-  return spots.filter((spot) => !context.selectedIds.includes(spot.id) && !context.rejectedIds.includes(spot.id))
+export function getRecommendations(spots: Spot[], context: RecommendationContext, limit = 5): ScoredSpot[] {
+  return spots.filter((spot) => !context.selectedIds.includes(spot.id) && !context.rejectedIds.includes(spot.id) && !(context.previous?.venueType === 'restaurant' && spot.venueType === 'restaurant'))
     .map((spot) => scoreSpot(spot, context)).filter((spot) => spot.score > -4)
     .sort((a, b) => b.score - a.score).slice(0, limit);
 }

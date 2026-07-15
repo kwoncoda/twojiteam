@@ -7,7 +7,7 @@ import { courseMeta } from '../../data/mock/savedCourses';
 import { getSavedCourses, removeSavedCourse } from '../../features/saved-courses/savedCourses.store';
 import { LIKED_KEY, seedLikedSpots } from '../../features/favorites/favorites.store';
 import type { LikedSpot } from '../../features/favorites/favorites.store';
-import { logout } from '../../features/auth/session';
+import { useAuth } from '../../app/providers/AuthProvider';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { useToast } from '../../hooks/useToast';
 import { copyShareLink } from '../../features/sharing/share';
@@ -27,7 +27,7 @@ export function MyPage() {
   const shareCourse = (id: string) => { setOpenCourseMenu(null); share(`/mypage/course/${id}`); };
   const deleteCourse = (id: string) => { setCourses(removeSavedCourse(id)); setOpenCourseMenu(null); showToast('저장된 코스를 삭제했어요.'); };
   const removeLiked = (id: string) => setLiked((list) => list.filter((item) => item.id !== id));
-  const onLogout = () => { logout(); navigate('/login'); };
+  const onLogout = async () => { await signOut(); navigate('/login'); };
 
   return (
     <>
@@ -40,9 +40,9 @@ export function MyPage() {
         <div className={styles.profile}>
           <div className={styles.avatar} aria-hidden="true">여</div>
           <div className={styles.info}>
-            <div className={styles.name}>여행자님</div>
-            <div className={styles.id}>@travelpick_user</div>
-            <div className={styles.phone}>010-1234-5678</div>
+            <div className={styles.name}>{user?.displayName ?? '여행자님'}</div>
+            <div className={styles.id}>{user?.email}</div>
+            <div className={styles.phone}>{user?.phone ?? ''}</div>
           </div>
           <button type="button" className={`button button-secondary ${styles.logout}`} onClick={onLogout}>로그아웃</button>
         </div>
