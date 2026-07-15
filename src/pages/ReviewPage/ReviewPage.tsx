@@ -16,7 +16,7 @@ import { loadGoogleMaps } from '../../features/map/googleMaps.loader';
 import styles from './ReviewPage.module.css';
 
 export function ReviewPage() {
-  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [saving, setSaving] = useState(false); const [saveComplete, setSaveComplete] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null);
+  const navigate = useNavigate(); const { plan, setPlan, removeSpot, reorderSpot, setTransport, setRoute, save } = useTravelPlan(); const [saved, setSaved] = useState(false); const [saving, setSaving] = useState(false); const [saveComplete, setSaveComplete] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [selectedDate, setSelectedDate] = useState('');
   useEffect(() => { if (!plan || !plan.spots.length) navigate('/'); }, [navigate, plan]);
   const routeKey = plan?.spots.slice(0, -1).map((item, index) => `${item.spot.id}:${plan.spots[index + 1].spot.id}:${plan.spots[index + 1].transportMode ?? 'DRIVING'}`).join('|') ?? '';
   useEffect(() => {
@@ -46,7 +46,8 @@ export function ReviewPage() {
     return next?.index === index + 1 ? [{ origin: item.spot, destination: next.item.spot, mode: next.item.transportMode ?? 'DRIVING' as TransportMode, departureTime: schedule[index]?.departure }] : [];
   });
   if (!plan) return null;
-  const { visitMinutes, travelMinutes, estimatedCost: cost } = getItineraryTotals(plan);
+  const selectedDayPlan = { ...plan, spots: visibleSpots.map(({ item }) => item), routes: visibleRoutes.map((_, index) => plan.routes[visibleSpots[index].index]) };
+  const { visitMinutes, travelMinutes, estimatedCost: cost, currency } = getItineraryTotals(selectedDayPlan);
   const savePlan = async () => {
     if (saving) return;
     await save();

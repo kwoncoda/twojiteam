@@ -19,6 +19,7 @@ const heartIcon = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-
 
 export function MyPage() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [courses, setCourses] = useState(getSavedCourses);
   const [openCourseMenu, setOpenCourseMenu] = useState<string | null>(null);
   const [liked, setLiked] = useLocalStorage<LikedSpot[]>(LIKED_KEY, seedLikedSpots);
